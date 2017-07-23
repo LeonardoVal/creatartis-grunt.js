@@ -1,0 +1,56 @@
+{
+	"name": "creatartis-grunt",
+	"description": "Grunt build setup for creatartis' projects.",
+	"keywords": ["grunt"],
+	"version": "0.0.1",
+	"homepage": "https://github.com/LeonardoVal/creatartis-grunt",
+	"author": {
+		"name": "Leonardo Val",
+		"email": "leonardo.val@creatartis.com"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git://github.com/LeonardoVal/creatartis-grunt.git"
+	},
+	"bugs": {
+		"url": "https://github.com/LeonardoVal/creatartis-grunt/issues"
+	},
+	"licenses": [
+		{
+			"type": "MIT",
+			"url": "https://github.com/LeonardoVal/creatartis-grunt/blob/master/LICENSE.md"
+		}
+	],
+	"main": "build/creatartis-grunt.js",
+	"files": [
+		"build",
+		"LICENSE.md"
+	],
+	"dependencies": {
+		"requirejs": "~2.2.0",
+		"grunt": "~1.0.1",
+			"grunt-contrib-copy": "~1.0.0",
+			"grunt-contrib-concat": "~1.0.1",
+			"grunt-contrib-uglify": "~1.0.1",
+			"grunt-contrib-jshint": "~1.0.0",
+			"grunt-contrib-clean": "~1.1.0",
+			"grunt-docker": "~0.0.11",
+			"grunt-karma": "~2.0.0",
+				"karma": "~0.13.22",
+				"karma-requirejs": "~1.0.0",
+				"karma-jasmine": "~1.0.2",
+				"jasmine-core": "~2.4.1",
+				"karma-chrome-launcher": "~1.0.1",
+				"karma-firefox-launcher": "1.0.0",
+				"karma-sourcemap-loader": "~0.3.7"
+	},
+	"devDependencies": {
+		"grunt-contrib-nodeunit": "^0.3.3"
+	},
+	"scripts": {
+		"test": "grunt test"
+	},
+	"engines": {
+		"node": ">= 0.8.0"
+	}
+}
