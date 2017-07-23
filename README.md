@@ -1,89 +1,34 @@
-# grunt-creatartis
+# creatartis-grunt.js
 
-> Grunt plugin for creatartis' projects.
+[Grunt](https://gruntjs.com/) build setup for creatartis' projects. Includes source code
+[concatenation](https://github.com/gruntjs/grunt-contrib-concat),
+[linting](https://github.com/gruntjs/grunt-contrib-jshint),
+[minimization](https://github.com/gruntjs/grunt-contrib-uglify),
+[running test cases in browsers](https://github.com/karma-runner/grunt-karma) and
+[documentation generation](https://github.com/Prevole/grunt-docker).
 
-## Getting Started
-This plugin requires Grunt `~0.4.5`
+The `Gruntfile` can be abbreviated to something like this:
 
-If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
-
-```shell
-npm install grunt-creatartis --save-dev
+```javascript
+module.exports = function(grunt) {
+	grunt.initConfig({
+		pkg: grunt.file.readJSON('package.json'),
+	});
+	require('creatartis-grunt').config(grunt, {
+		src: [
+			'src/__prologue__.js',
+			/* ... source files ... */
+			'src/__epilogue__.js'
+		],
+		deps: [
+			{	name: 'dependency',
+				path: 'node_modules/dependency/build/dependency.js'
+			},
+			/* ... more dependencies ... */
+		]
+	});
+	grunt.registerTask('default', ['build']);
+};
 ```
 
-Once the plugin has been installed, it may be enabled inside your Gruntfile with this line of JavaScript:
-
-```js
-grunt.loadNpmTasks('grunt-creatartis');
-```
-
-## The "creatartis" task
-
-### Overview
-In your project's Gruntfile, add a section named `creatartis` to the data object passed into `grunt.initConfig()`.
-
-```js
-grunt.initConfig({
-  creatartis: {
-    options: {
-      // Task-specific options go here.
-    },
-    your_target: {
-      // Target-specific file lists and/or options go here.
-    },
-  },
-});
-```
-
-### Options
-
-#### options.separator
-Type: `String`
-Default value: `',  '`
-
-A string value that is used to do something with whatever.
-
-#### options.punctuation
-Type: `String`
-Default value: `'.'`
-
-A string value that is used to do something else with whatever else.
-
-### Usage Examples
-
-#### Default Options
-In this example, the default options are used to do something with whatever. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result would be `Testing, 1 2 3.`
-
-```js
-grunt.initConfig({
-  creatartis: {
-    options: {},
-    files: {
-      'dest/default_options': ['src/testing', 'src/123'],
-    },
-  },
-});
-```
-
-#### Custom Options
-In this example, custom options are used to do something else with whatever else. So if the `testing` file has the content `Testing` and the `123` file had the content `1 2 3`, the generated result in this case would be `Testing: 1 2 3 !!!`
-
-```js
-grunt.initConfig({
-  creatartis: {
-    options: {
-      separator: ': ',
-      punctuation: ' !!!',
-    },
-    files: {
-      'dest/default_options': ['src/testing', 'src/123'],
-    },
-  },
-});
-```
-
-## Contributing
-In lieu of a formal styleguide, take care to maintain the existing coding style. Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
-
-## Release History
-_(Nothing yet)_
+Copyright 2017 - [Leonardo Val](https://github.com/LeonardoVal)
