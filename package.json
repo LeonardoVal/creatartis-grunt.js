@@ -12,15 +12,7 @@
 		"type": "git",
 		"url": "git://github.com/LeonardoVal/creatartis-grunt.git"
 	},
-	"bugs": {
-		"url": "https://github.com/LeonardoVal/creatartis-grunt/issues"
-	},
-	"licenses": [
-		{
-			"type": "MIT",
-			"url": "https://github.com/LeonardoVal/creatartis-grunt/blob/master/LICENSE.md"
-		}
-	],
+	"license": "MIT",
 	"main": "build/creatartis-grunt.js",
 	"files": [
 		"build",
@@ -40,17 +32,10 @@
 				"karma-requirejs": "~1.0.0",
 				"karma-jasmine": "~1.0.2",
 				"jasmine-core": "~2.4.1",
-				"karma-chrome-launcher": "~1.0.1",
 				"karma-firefox-launcher": "1.0.0",
-				"karma-sourcemap-loader": "~0.3.7"
-	},
-	"devDependencies": {
-		"grunt-contrib-nodeunit": "^0.3.3"
+				"karma-sourcemap-loader": "~0.3.7",
+			"grunt-benchmark": "~1.0.0"
 	},
 	"scripts": {
-		"test": "grunt test"
-	},
-	"engines": {
-		"node": ">= 0.8.0"
 	}
 }
