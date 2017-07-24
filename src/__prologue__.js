@@ -3,4 +3,7 @@
 //"use strict";
 
 var path = require('path'),
-	exports = module.exports;
+	fs = require('fs'),
+	prompt = require('prompt'); // <https://github.com/flatiron/prompt>
+
+var exports = module.exports;
