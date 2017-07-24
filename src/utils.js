@@ -7,7 +7,7 @@ Miscelaneous functions and definitions.
 checks the Javascript environment and guesses which module definition method to use: AMD, CommonJS
 or script tags.
 */
-var makeUMDWrapper = exports.makeUMDWrapper = function makeUMDWrapper(deps) {
+var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(deps) {
 	var nameList = JSON.stringify(deps.map(function (dep) {
 			return dep.name;
 		})),
@@ -29,6 +29,45 @@ var makeUMDWrapper = exports.makeUMDWrapper = function makeUMDWrapper(deps) {
 		.replace('$1', nameList)
 		.replace('$2', requireList)
 		.replace('$3', globalList);
+};
+
+var wrapper_AMD = exports.wrapper_AMD = function wrapper_AMD(deps) {
+	var nameList = JSON.stringify(deps.map(function (dep) {
+			return dep.name;
+		}));
+	return (function (init) { "use strict";
+			define($1, init);
+		} +'').replace('$1', nameList);
+};
+
+var wrapper_node = exports.wrapper_node = function wrapper_node(deps) {
+	var requireList = deps.map(function (dep) {
+			return 'require('+ JSON.stringify(dep.name) +')';
+		}).join(',');
+	return (function (init) { "use strict";
+			module.exports = init($1);
+		} +'').replace('$1', requireList);
+};
+
+var wrapper = exports.wrapper = function wrapper(type, deps) {
+	switch (type.trim().toLowerCase()) {
+		case 'umd':
+			return {
+				banner: '('+ wrapper_UMD(deps) +').call(this,',
+				footer: ');'
+			};
+		case 'amd':
+			return {
+				banner: '('+ wrapper_AMD(deps) +').call(this,',
+				footer: ');'
+			};
+		case 'node':
+			return {
+				banner: '('+ wrapper_node(deps) +').call(this,',
+				footer: ');'
+			};
+		default: return {};
+	}
 };
 
 /** Dependencies can be expressed by a simple string with the module's name, or an object with many
@@ -61,9 +100,17 @@ var normalizeDeps = exports.normalizeDeps = function normalizeDeps(grunt, deps) 
 */
 function _try(f, grunt, params) {
 	try {
-		f(grunt, params);
+		return f(grunt, params);
 	} catch (error) {
 		grunt.log.error('Error while calling '+ f.name +':\n'+ error.stack);
 		throw error;
+	}
+}
+
+/** This function loads a task if it is not already loaded.
+*/
+function _loadTask(grunt, task, npmTask) {
+	if (!grunt.task.exists(task)) {
+		grunt.loadNpmTasks(npmTask);
 	}
 }
