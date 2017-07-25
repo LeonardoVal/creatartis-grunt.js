@@ -2,7 +2,7 @@
 	"name": "creatartis-grunt",
 	"description": "Grunt build setup for creatartis' projects.",
 	"keywords": ["grunt"],
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"homepage": "https://github.com/LeonardoVal/creatartis-grunt",
 	"author": {
 		"name": "Leonardo Val",
@@ -19,7 +19,6 @@
 		"LICENSE.md"
 	],
 	"dependencies": {
-		"prompt": "~1.0.0",
 		"requirejs": "~2.2.0",
 		"grunt": "~1.0.1",
 			"grunt-contrib-copy": "~1.0.0",
