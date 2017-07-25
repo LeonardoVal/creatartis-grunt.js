@@ -15,7 +15,11 @@ module.exports = function(grunt) {
 					banner: '',
 					footer: ''
 				},
-				src: ['src/__prologue__.js', 'src/utils.js', 'src/config.js'],
+				src: ['__prologue__',
+						'utils', 'config', 'layout'
+					].map(function (name) {
+						return 'src/'+ name +'.js';
+					}),
 				dest: 'build/<%= pkg.name %>.js'
 			},
 		},
@@ -23,7 +27,8 @@ module.exports = function(grunt) {
 			build: {
 				options: { // Check <http://jshint.com/docs/options/>.
 					loopfunc: true,
-					boss: true
+					boss: true,
+					scripturl: true
 				},
 				src: ['build/<%= pkg.name %>.js', 'tests/specs/*.js'],
 			},
