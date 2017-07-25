@@ -26,30 +26,63 @@ function readJSON(path) {
 */
 var project = exports.project = {};
 
-project._args = function _args(args, ask) { //TODO
+function errorIf(cond) {
+	if (cond) {
+		throw new Error(Array.prototype.slice.call(arguments, 1).join(''));
+	}
+}
+
+project._args = function _args(args) { //TODO
 	args = Object.assign({ // Defaults
-		description: "",
-		dependencies: {},
-		devDependencies: {
-			'creatartis-grunt': '~0.0.1'
+		contributors: [],
+		dependencies: {
+			'creatartis-base': 'latest'
 		},
-		files: "",
+		devDependencies: {
+			'creatartis-grunt': 'latest'
+		},
+		files: ['LICENSE.md', 'build'],
 		keywords: [],
 		license: 'MIT',
-		repository: { type: 'git' },
+		repository: {},
 		scripts: {},
 		version: '0.0.1'
-	}, args);
-	if (args.name && !args.main) {
+	}, readJSON('./package.json'), args);
+
+	errorIf(!args.name, 'Project has no `name`!');
+	errorIf(!args.description, 'Project has no `description`!');
+	errorIf(!args.author, 'Project has no `author`!');
+	
+	if (typeof args.author === 'string') {
+		args.author = { name: args.author };
+	}
+	if (!args.main) {
 		args.main = 'build/'+ args.name +'.js';
+	}
+	if (args.author.github) {
+		if (!args.author.url) {
+			args.author.url = 'https://github.com/'+ args.author.github;
+		}
+		if (!args.homepage) {
+			args.homepage = 'https://github.com/'+ args.author.github +'/'+ args.name +'.js';
+		}
+		if (!args.repository) {
+			args.repository = { type: 'git', url: args.homepage +'.git' };
+		}
+		if (!args.bugs) {
+			args.bugs = { url: args.homepage +'/issues' };
+		}
+		if (typeof args.license !== 'object') {
+			args.license = { type: args.license || 'MIT', url: args.homepage +'/LICENSE.md' };
+		}
 	}
 	return args;
 };
 
 project.license = function license(args) {
-	var name = args && args.name || '??',
-		authorName = args && args.author && args.author.name || '??',
-		authorEmail = args && args.author && args.author.email || '??',
+	var name = args && args.name || '¿name?',
+		authorName = args && args.author && args.author.name || '¿author.name?',
+		authorEmail = args && args.author && args.author.email || '¿author.email?',
 		year = (new Date()).getFullYear();
 	return [
 		'The MIT License', '===============', '',
@@ -73,10 +106,10 @@ project.license = function license(args) {
 };
 
 project.readme = function readme(args) {
-	var name = args && args.name || '??',
-		description = args && args.description || '...',
-		authorName = args && args.author && args.author.name || '??',
-		authorEmail = args && args.author && args.author.email || '??',
+	var name = args && args.name || '¿name?',
+		description = args && args.description || '¿description?',
+		authorName = args && args.author && args.author.name || '¿author.name?',
+		authorEmail = args && args.author && args.author.email || '¿author.email?',
 		year = (new Date()).getFullYear();
 	return [
 		'# '+ name, '', description, '',
@@ -113,7 +146,7 @@ project.npmignore = function npmignore(args) {
 };
 
 project.gruntfile = function gruntfile(args) {
-	var name = args && args.name || '??';
+	var name = args && args.name || '¿name?';
 	return '// Gruntfile for ['+ name +'.js](repo).\n\nmodule.exports = '+ (function(grunt) {
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
@@ -135,8 +168,22 @@ project.gruntfile = function gruntfile(args) {
 };
 
 project.__prologue__ = function __prologue__(args) {
-	return [ //FIXME deps
-		'function __init__(/* deps */){ "use strict";', '', '// See __epilogue__.js'
+	var name = args && args.name || '¿name?',
+		dependencies = (args && args.dependencies && Object.keys(args.dependencies) ||
+			['¿dependencies?']).join(', ');
+	return [
+		'/** Library '+ name +' wrapper and layout.', '*/',
+		'function __init__('+ dependencies +'){ "use strict";', '',
+		'// Import synonyms. ////////////////////////////////////////////////////////////////////////////////',
+		'',
+		'// Library layout. /////////////////////////////////////////////////////////////////////////////////',
+		'\tvar exports = {',
+		'\t\t__package__: \''+ name +'\',',
+		'\t\t__name__: \''+ name +'\',',
+		'\t\t__init__: __init__,',
+		'\t\t__dependencies__: ['+ dependencies +']',
+		'\t};',
+		'', '// See __epilogue__.js'
 	].join('\n');
 };
 
@@ -147,8 +194,12 @@ project.__epilogue__ = function __epilogue__(args) {
 };
 
 project.console = function console(args) {
-	var name = args && args.name || '??',
-		repo = ''; //FIXME
+	var name = args && args.name || '¿name?',
+		description = args && args.description || '¿description?',
+		authorName = args && args.author && args.author.name || '¿author.name?',
+		authorEmail = args && args.author && args.author.email || '¿author.email?',
+		homepage = args && args.homepage || '¿homepage?';
+
 	function main() {
 		require.config({ paths: { /*TODO*/ } });
 		require([], function () {
@@ -183,7 +234,7 @@ project.console = function console(args) {
 		'\t</style>',
 		'\t<script type="text/javascript" src="lib/require.js"></script>',
 		'</head><body onload="main();">',
-		'\t<h1><a href="'+ repo +'" target="_blank">'+ name +'</a> tester</h1>',
+		'\t<h1><a href="'+ homepage +'" target="_blank">'+ name +'</a> tester</h1>',
 		'\t<p>Open your browser Javascript console. In Windows use: Ctrl+Shift+J in Chrome,'+
 			' Ctrl+Shift+K in Firefox, F12 in Internet Explorer, Ctrl+Shift+I in Opera.</p>',
 		'\t<table id="reference"><tr>',
@@ -192,8 +243,8 @@ project.console = function console(args) {
 		'\t\t<td>'+ description +'</td>',
 		'\t</tr></table>',
 		'\t<p style="text-align:center;"><a href="mailto:'+ authorEmail +'">&copy; '+ year +
-			' '+ authorName +'</a> - <a href="'+ repo +'" target="_blank">'+ name +
-			'.js@GitHub</a>',
+			' '+ authorName +'</a> - <a href="'+ homepage +'" target="_blank">'+ name +
+			'.js</a>',
 		'\t</p>',
 		'<script type="text/javascript"> "use strict"; '+ main +'</script>',
 		'</body></html>'
@@ -201,35 +252,39 @@ project.console = function console(args) {
 };
 
 project.karma_tester = function karma_tester(args) {
-	var main = function () {
-	require.config({ // Configure RequireJS.
-		baseUrl: '/base',
-		paths: { /* Dependencies' paths */	}
-	});
-	require(Object.keys(window.__karma__.files) // Dynamically load all test files
-			.filter(function (file) { // Filter test modules.
-				return /\.test\.js$/.test(file);
-			}).map(function (file) { // Normalize paths to RequireJS module names.
-				return file.replace(/^\/base\//, '').replace(/\.js$/, '');
-			}),
-		function () {
-			window.__karma__.start(); // we have to kickoff jasmine, as it is asynchronous
-		}
-	);
-};
+	var name = args && args.name || '¿name?',
+
+		paths = {};
+	paths[name] = 'lib/'+ name +'.js';
+	var main = (function () {
+			require.config({ // Configure RequireJS.
+				baseUrl: '/base',
+				paths: $paths
+			});
+			require(Object.keys(window.__karma__.files) // Dynamically load all test files
+					.filter(function (file) { // Filter test modules.
+						return /\.test\.js$/.test(file);
+					}).map(function (file) { // Normalize paths to RequireJS module names.
+						return file.replace(/^\/base\//, '').replace(/\.js$/, '');
+					}),
+				function () {
+					window.__karma__.start(); // we have to kickoff jasmine, as it is asynchronous
+				}
+			);
+		} +'')
+		.replace(/\n\t\t/g, '\n')
+		.replace('$paths', JSON.stringify(paths));
 	return [
 		'('+ main +')();'
 	].join('\n');
 };
 
-exports.newProject = function newProject(args) { //TODO
-	mkdir('./src/', true);
-	mkdir('./test/', true);
-	mkdir('./test/lib/', true);
-	mkdir('./test/specs/', true);
-	mkdir('./test/perf/', true);
-	mkdir('./build/', true);
-	mkdir('./docs/', true);
+exports.newProject = function newProject(args) {
+	args = _args(args);
+
+	'src test test/lib test/specs test/perf build docs'.split(/\s+/).forEach(function (p) {
+		mkdir('./'+ p +'/', true);
+	});
 
 	writeFile('./LICENSE.md', project.license(args), true);
 	writeFile('./README.md', project.readme(args), true);
