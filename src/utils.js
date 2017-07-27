@@ -15,7 +15,7 @@ var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(deps) {
 			return 'require('+ JSON.stringify(dep.name) +')';
 		}).join(','),
 		globalList = deps.map(function (dep) {
-			return 'this.'+ dep.global;
+			return 'this.'+ dep.id;
 		}).join(',');
 	return (function (init) { "use strict";
 			if (typeof define === 'function' && define.amd) {
