@@ -32,7 +32,7 @@ function errorIf(cond) {
 	}
 }
 
-project._args = function _args(args) { //TODO
+var _args = project._args = function _args(args) { //TODO
 	args = Object.assign({ // Defaults
 		contributors: [],
 		dependencies: {
@@ -52,7 +52,7 @@ project._args = function _args(args) { //TODO
 	errorIf(!args.name, 'Project has no `name`!');
 	errorIf(!args.description, 'Project has no `description`!');
 	errorIf(!args.author, 'Project has no `author`!');
-	
+
 	if (typeof args.author === 'string') {
 		args.author = { name: args.author };
 	}
@@ -159,7 +159,7 @@ project.gruntfile = function gruntfile(args) {
 				return 'src/'+ n +'.js';
 			}),
 		deps: [
-			//TODO Dependencies.
+			//TODO Dependencies { name: ..., path: ..., id: ... }
 		]
 	});
 
@@ -198,7 +198,8 @@ project.console = function console(args) {
 		description = args && args.description || '¿description?',
 		authorName = args && args.author && args.author.name || '¿author.name?',
 		authorEmail = args && args.author && args.author.email || '¿author.email?',
-		homepage = args && args.homepage || '¿homepage?';
+		homepage = args && args.homepage || '¿homepage?',
+		year = (new Date()).getFullYear();
 
 	function main() {
 		require.config({ paths: { /*TODO*/ } });
@@ -281,9 +282,13 @@ project.karma_tester = function karma_tester(args) {
 
 exports.newProject = function newProject(args) {
 	args = _args(args);
+	var params = defaults({});
 
-	'src test test/lib test/specs test/perf build docs'.split(/\s+/).forEach(function (p) {
-		mkdir('./'+ p +'/', true);
+	['src/', params.test, params.test_lib, params.specs, params.perf, params.build, params.docs
+	].forEach(function (p) {
+		if (p) {
+			mkdir('./'+ p, true);
+		}
 	});
 
 	writeFile('./LICENSE.md', project.license(args), true);
@@ -292,10 +297,11 @@ exports.newProject = function newProject(args) {
 	writeFile('./.npmignore', project.npmignore(args), true);
 	writeFile('./.gitattributes', project.gitattributes(args), true);
 	writeFile('./Gruntfile.js', project.gruntfile(args), true);
+	writeFile('./package.json', JSON.stringify(args, null, '\t'), true);
 
 	writeFile('./src/__prologue__.js', project.__prologue__(args), true);
 	writeFile('./src/__epilogue__.js', project.__epilogue__(args), true);
 
-	writeFile('./test/console.html', project.console(args), true);
-	writeFile('./test/karma-tester.js', project.karma_tester(args), true);
+	writeFile('./'+ params.test +'console.html', project.console(args), true);
+	writeFile('./'+ params.test +'karma-tester.js', project.karma_tester(args), true);
 };
