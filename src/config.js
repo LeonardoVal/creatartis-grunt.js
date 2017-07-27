@@ -6,7 +6,7 @@
 function defaults(params) {
 	params = Object.assign({
 		build: 'build/',
-		test: 'test/',
+		test: 'tests/',
 		docs: 'docs/',
 
 		separator: '\n\n',
