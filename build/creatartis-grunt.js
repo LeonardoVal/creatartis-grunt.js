@@ -147,6 +147,10 @@ function defaults(params) {
 		loopfunc: true,
 		boss: true
 	}, params.jshint);
+	params.sourceFiles = (params.sourceFiles || [])
+		.concat((params.sourceNames || []).map(function (n) {
+			return 'src/'+ n +'.js';
+		}));
 
 	params.test_lib = params.test && (params.test_lib || params.test +'lib/');
 	params.specs = params.test && (params.specs || params.test +'specs/');
@@ -186,7 +190,7 @@ var config_concat = exports.config_concat = function config_concat(grunt, params
 		concat: {
 			build: {
 				options: options,
-				src: params.src,
+				src: params.sourceFiles,
 				dest: params.build +'<%= pkg.name %>.js'
 			},
 		}
@@ -262,6 +266,9 @@ var config_copy = exports.config_copy = function config_copy(grunt, params) {
 				files.push(dep.sourceMap);
 			}
 		});
+		if (Array.isArray(params.testLibFiles)) {
+			files = files.concat(params.testLibFiles);
+		}
 
 		grunt.config.merge({
 			copy: {

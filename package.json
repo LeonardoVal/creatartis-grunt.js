@@ -2,7 +2,7 @@
 	"name": "creatartis-grunt",
 	"description": "Grunt build setup for creatartis' projects.",
 	"keywords": ["grunt"],
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"homepage": "https://github.com/LeonardoVal/creatartis-grunt",
 	"author": {
 		"name": "Leonardo Val",
