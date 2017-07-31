@@ -421,19 +421,19 @@ exports.config = function config(grunt, params) {
 			}
 		}
 	} else { // Register default tasks
-		var compileTasks = ['clean:build', 'concat:build', 'jshint:build', 'uglify:build'];
+		var compileTasks = ['clean:build', 'concat:build', 'jshint:build', 'uglify:build'],
+			buildTasks = ['compile'];
 		if (doCopy) {
 			compileTasks.push('copy:build');
 		}
 		grunt.registerTask('compile', compileTasks);
 		if (doTest) {
 			grunt.registerTask('test', ['compile', 'karma:build']);
+			buildTasks = ['test'];
 		}
-		if (doDocs) {
-			grunt.registerTask('build', ['test', 'docker:build']);
-		}
+		grunt.registerTask('build', doDocs ? buildTasks.concat(['docker:build']) : buildTasks);
 		if (doPerf) {
-			grunt.registerTask('perf', ['test', 'benchmark:build']);
+			grunt.registerTask('perf', buildTasks.concat(['benchmark:build']));
 		}
 	}
 };
