@@ -205,7 +205,7 @@ concatenated code, and also the scripts for the test cases.
 */
 var config_jshint = exports.config_jshint = function config_jshint(grunt, params) {
 	params = defaults(params);
-	var src = [params.build +'<%= pkg.name %>.js'];
+	var src = [params.build +'*.js'];
 	if (params.specs) {
 		src.push(params.specs +'*.js');
 	}
@@ -255,11 +255,7 @@ var config_copy = exports.config_copy = function config_copy(grunt, params) {
 	if (params.hasOwnProperty('test_lib') && !params.test_lib) {
 		return false;
 	} else {
-		var files = [
-				params.build +'<%= pkg.name %>.js',
-				params.build +'<%= pkg.name %>.js.map',
-				'node_modules/requirejs/require.js'
-			];
+		var files = ['node_modules/requirejs/require.js'];
 		params.deps.forEach(function (dep) {
 			files.push(dep.path);
 			if (dep.sourceMap) {
@@ -269,13 +265,20 @@ var config_copy = exports.config_copy = function config_copy(grunt, params) {
 		if (Array.isArray(params.testLibFiles)) {
 			files = files.concat(params.testLibFiles);
 		}
-
+		files = [	{ nonull: true, expand: true, flatten: true,
+					src: params.build +'*.js', dest: params.test_lib },
+				{ nonull: true, expand: true, flatten: true,
+					src: params.build +'*.js.map', dest: params.test_lib }
+			].concat(files.map(function (f) {
+				return { nonull: true, src: f, dest: params.test_lib + path.basename(f) };
+			}));
+		if (Array.isArray(params.otherCopy)) {
+			files = params.otherCopy.concat(files);
+		}
 		grunt.config.merge({
 			copy: {
 				build: {
-					files: files.map(function (f) {
-						return { nonull: true, src: f, dest: params.test_lib + path.basename(f) };
-					})
+					files: files
 				}
 			},
 		});
@@ -392,10 +395,6 @@ var config_docker = exports.config_docker = function config_docker(grunt, params
 /** ## Full configuration ##########################################################################
 
 TODO
-+ `build`: Path to place the build, `build/` by default.
-+ `src`: List of source file paths to concatenate.
-+ `sourceMap`: Flag for the generation of source maps, `true` by default.
-
 */
 exports.config = function config(grunt, params) {
 	if (!grunt.config('pkg')) {
