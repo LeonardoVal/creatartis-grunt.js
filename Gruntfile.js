@@ -7,6 +7,7 @@ Grunt build configuration for @creatartis projects. Copyright (c) 2017 Leonardo 
 module.exports = function(grunt) {
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
+
 		concat: { ////////////////////////////////////////////////////////////////////////////////
 			build: {
 				options: {
@@ -20,7 +21,7 @@ module.exports = function(grunt) {
 					].map(function (name) {
 						return 'src/'+ name +'.js';
 					}),
-				dest: 'build/<%= pkg.name %>.js'
+				dest: 'build/creatartis-grunt.js'
 			},
 		},
 		jshint: { ////////////////////////////////////////////////////////////////////////////////
@@ -30,7 +31,7 @@ module.exports = function(grunt) {
 					boss: true,
 					scripturl: true
 				},
-				src: ['build/<%= pkg.name %>.js', 'tests/specs/*.js'],
+				src: ['build/creatartis-grunt.js', 'tests/specs/*.js'],
 			},
 		},
 		clean: { /////////////////////////////////////////////////////////////////////////////////
