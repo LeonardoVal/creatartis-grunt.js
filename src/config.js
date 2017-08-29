@@ -3,8 +3,12 @@
 
 /** Configuration parameters' default values.
 */
-function defaults(params) {
+function defaults(grunt, params) {
 	params = Object.assign({
+		pkg_name: grunt.config('pkg.name'),
+		pkg_scope: '',
+		pkg_version: grunt.config('pkg.version'),
+
 		build: 'build/',
 		test: 'tests/',
 		docs: 'docs/',
@@ -14,6 +18,12 @@ function defaults(params) {
 		wrapper: 'umd',
 		karma: ['Firefox']
 	}, params);
+
+	var m = /^@([^\/]+)\/(.+)$/.exec(params.pkg_name);
+	if (m) {
+		params.pkg_name = m[2];
+		params.pkg_scope = m[1];
+	}
 
 	params.jshint = Object.assign({
 		loopfunc: true,
@@ -37,7 +47,7 @@ function defaults(params) {
 The `clean` task is used to delete all files in the build folder (`build/`).
 */
 var config_clean = exports.config_clean = function config_clean(grunt, params) {
-	params = defaults(params);
+	params = defaults(grunt, params);
 	grunt.config.merge({
 		clean: {
 			build: [params.build]
@@ -52,7 +62,7 @@ The source files of the project (in the `src/` folder) are concatenated into one
 `grunt-contrib-concat` can also generate source map files, that are very useful for debugging.
 */
 var config_concat = exports.config_concat = function config_concat(grunt, params) {
-	params = defaults(params);
+	params = defaults(grunt, params);
 	var options = Object.assign({
 			separator: params.separator,
 			sourceMap: params.sourceMap
@@ -63,7 +73,7 @@ var config_concat = exports.config_concat = function config_concat(grunt, params
 			build: {
 				options: options,
 				src: params.sourceFiles,
-				dest: params.build +'<%= pkg.name %>.js'
+				dest: params.build + params.pkg_name +'.js'
 			},
 		}
 	});
@@ -76,7 +86,7 @@ Checking the code is imperative in Javascript. The plugin `grunt-contrib-jshint`
 concatenated code, and also the scripts for the test cases.
 */
 var config_jshint = exports.config_jshint = function config_jshint(grunt, params) {
-	params = defaults(params);
+	params = defaults(grunt, params);
 	var src = [params.build +'*.js'];
 	if (params.specs) {
 		src.push(params.specs +'*.js');
@@ -98,18 +108,18 @@ The plugin `grunt-contrib-uglify` is used to minimize the concatenated code. It 
 source maps.
 */
 var config_uglify = exports.config_uglify = function config_uglify(grunt, params) {
-	params = defaults(params);
+	params = defaults(grunt, params);
 	grunt.config.merge({
 		uglify: {
 			build: {
-				src: params.build +'<%= pkg.name %>.js',
-				dest: params.build +'<%= pkg.name %>.min.js',
+				src: params.build + params.pkg_name +'.js',
+				dest: params.build + params.pkg_name +'.min.js',
 				options: {
-					banner: '//! <%= pkg.name %> <%= pkg.version %>\n',
+					banner: '//! '+ params.pkg_name +' '+ params.pkg_version +'\n',
 					report: 'min',
 					sourceMap: params.sourceMap,
-					sourceMapIn: params.build +'<%= pkg.name %>.js.map',
-					sourceMapName: params.build +'<%= pkg.name %>.min.js.map'
+					sourceMapIn: params.build + params.pkg_name +'.js.map',
+					sourceMapName: params.build + params.pkg_name +'.min.js.map'
 				}
 			}
 		}
@@ -123,7 +133,7 @@ For testing the library, the built module and its dependencies are copied in the
 This makes it easier to run the test cases, but also to create HTML pages for debugging.
 */
 var config_copy = exports.config_copy = function config_copy(grunt, params) {
-	params = defaults(params);
+	params = defaults(grunt, params);
 	if (params.hasOwnProperty('test_lib') && !params.test_lib) {
 		return false;
 	} else {
@@ -165,11 +175,11 @@ Karma is a framework that automates web browsers to run test cases. It is a litt
 properly, but is very useful.
 */
 var config_karma = exports.config_karma = function config_karma(grunt, params) {
-	params = defaults(params);
+	params = defaults(grunt, params);
 	if (params.hasOwnProperty('karma') && !params.karma) {
 		return false;
 	} else {
-		var pkgName = grunt.config('pkg.name'),
+		var pkgName = params.pkg_name,
 			karma = {
 				options: {
 					frameworks: ['jasmine', 'requirejs'], // See: https://npmjs.org/browse/keyword/karma-adapter
@@ -220,7 +230,7 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 Performance benchmarks using `grunt-benchmark`.
 */
 var config_benchmark = exports.config_benchmark = function config_benchmark(grunt, params) {
-	params = defaults(params);
+	params = defaults(grunt, params);
 	if (!params.perf) {
 		return false;
 	} else {
@@ -242,7 +252,7 @@ Documentation generation uses `grunt-docker`, using the sources at `src/`, `READ
 markdown file in the `docs/` folder.
 */
 var config_docker = exports.config_docker = function config_docker(grunt, params) {
-	params = defaults(params);
+	params = defaults(grunt, params);
 	if (params.hasOwnProperty('docs') && !params.docs) {
 		return false;
 	} else {
