@@ -237,7 +237,7 @@ var config_benchmark = exports.config_benchmark = function config_benchmark(grun
 		grunt.config.merge({
 			benchmark: {
 				build: {
-					src: [params.perf]
+					src: [params.perf +'*.perf.js']
 				}
 			}
 		});
