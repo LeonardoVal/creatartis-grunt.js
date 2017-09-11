@@ -24,6 +24,14 @@ module.exports = function(grunt) {
 				dest: 'build/creatartis-grunt.js'
 			},
 		},
+		copy: { //////////////////////////////////////////////////////////////////////////////////
+			build: {
+				files: [
+					{ nonull: true, src: 'src/bundled/karma-tester.js',
+						dest: 'build/karma-tester.js' }
+				]
+			}
+		},
 		jshint: { ////////////////////////////////////////////////////////////////////////////////
 			build: {
 				options: { // Check <http://jshint.com/docs/options/>.
@@ -31,7 +39,11 @@ module.exports = function(grunt) {
 					boss: true,
 					scripturl: true
 				},
-				src: ['build/creatartis-grunt.js', 'tests/specs/*.js'],
+				src: [
+					'build/creatartis-grunt.js',
+					'build/karma-tester.js',
+					'tests/specs/*.js'
+				]
 			},
 		},
 		clean: { /////////////////////////////////////////////////////////////////////////////////
@@ -40,9 +52,10 @@ module.exports = function(grunt) {
 	});
 
 	grunt.loadNpmTasks('grunt-contrib-clean');
+	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-contrib-jshint');
 
-	grunt.registerTask('build', ['clean:build', 'concat:build', 'jshint:build']);
+	grunt.registerTask('build', ['clean:build', 'copy:build', 'concat:build', 'jshint:build']);
 	grunt.registerTask('default', ['build']);
 };
