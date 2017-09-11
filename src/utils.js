@@ -84,11 +84,18 @@ var normalizeDeps = exports.normalizeDeps = function normalizeDeps(grunt, deps) 
 			dep = { name: dep };
 		}
 		if (!dep.path) {
-			dep.path = require.resolve(dep.name);
-			if (!grunt.file.exists(dep.path)) {
-				grunt.fail.warn('Could not find module '+ dep.name +' at <'+ path +'>!');
-			}
+			dep.absolutePath = require.resolve(dep.name);
+		} else if (path.isAbsolute(dep.path)){
+			dep.absolutePath = dep.path;
+		} else {
+			dep.absolutePath = path.resolve(dep.path);
 		}
+		dep.path = path.relative(path.dirname(module.parent.filename), dep.absolutePath);
+		
+		//FIXME Allow to configure this loading.
+		require(dep.name);
+		dep.module = require.cache[dep.absolutePath];
+
 		if (grunt.file.exists(dep.path +'.map')) {
 			dep.sourceMap = dep.path +'.map';
 		}

@@ -3,6 +3,7 @@
 //"use strict";
 
 var path = require('path'),
-	fs = require('fs');
+	fs = require('fs'),
+	inspect = require('util').inspect;
 
 var exports = module.exports;
