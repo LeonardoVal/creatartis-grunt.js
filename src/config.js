@@ -6,7 +6,6 @@
 function defaults(grunt, params) {
 	params = Object.assign({
 		pkg_name: grunt.config('pkg.name'),
-		pkg_scope: '',
 		pkg_version: grunt.config('pkg.version'),
 
 		build: 'build/',
@@ -23,10 +22,10 @@ function defaults(grunt, params) {
 		throw new Error('`params.log` must be function!');
 	}
 
-	var m = /^@([^\/]+)\/(.+)$/.exec(params.pkg_name);
+	var m = _parse_pkg_name(params.pkg_name);
 	if (m) {
-		params.pkg_name = m[2];
-		params.pkg_scope = m[1];
+		params.pkg_name = m.name;
+		params.pkg_scope = m.scope;
 	}
 	params.deps = normalizeDeps(grunt, params.deps);
 
@@ -49,7 +48,7 @@ function defaults(grunt, params) {
 }
 
 function _log(tag, data) {
-	console.log(tag, inspect(data, { showHidden: false, colors: true, depth: 10 }));
+	console.log(tag, inspect(data, { showHidden: false, colors: true, depth: 4 }));
 }
 
 /** ## Configurate `clean` #########################################################################
@@ -76,7 +75,7 @@ var config_concat = exports.config_concat = function config_concat(grunt, params
 	var options = Object.assign({
 			separator: params.separator,
 			sourceMap: params.sourceMap
-		}, wrapper(params.wrapper, params.deps)),
+		}, wrapper(params.wrapper, params.pkg_name, params.deps)),
 		conf = {
 			concat: {
 				build: {
@@ -198,7 +197,7 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 					frameworks: ['jasmine', 'requirejs'], // See: https://npmjs.org/browse/keyword/karma-adapter
 					preprocessors: {},
 				     files: [
-						params.test +'karma-tester.js',
+						__dirname +'/karma-tester.js',
 						{ pattern: params.specs +'*.test.js', included: false },
 						{ pattern: params.build + pkgName +'.js', included: false },
 						{ pattern: params.build + pkgName +'.js.map', included: false }
@@ -237,12 +236,32 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 };
 
 function _karmaFiles(params, karma) {
-	params.deps.forEach(function (dep) {
-		karma.options.files.push({
-			pattern: dep.absolutePath,
-			included: false
-		});
-	});
+	var pending = params.deps.slice(),
+		included = {};
+	for (var dep = pending.shift(); dep; dep = pending.shift()) {
+		if (!included[dep.id]) {
+			included[dep.id] = (included[dep.id] |0) + 1;
+			karma.options.files.push({
+				pattern: dep.path,
+				included: false
+			});
+			if (dep.sourceMap) {
+				karma.options.preprocessors[dep.path] = ['sourcemap'];
+			}
+			if (dep.module) {
+				dep.module.children.forEach(function (m) {
+					var pathMatch = /node_modules\/((?:@.+?\/)?.+?)\//.exec(m.id);
+					if (pathMatch) {
+						pending.push({ id: pathMatch[1],
+							path: path.relative(path.dirname(module.parent.filename), m.id),
+							absolutePath: m.id,
+							module: m
+						});
+					}
+				});
+			}
+		}
+	}
 }
 
 /** ## Configurate `benchmark` #####################################################################

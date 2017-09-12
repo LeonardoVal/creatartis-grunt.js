@@ -7,15 +7,22 @@ Miscelaneous functions and definitions.
 checks the Javascript environment and guesses which module definition method to use: AMD, CommonJS
 or script tags.
 */
-var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(deps) {
+function _js_ref(obj, id) {
+	return obj + (/^[a-zA-Z_$][0-9a-zA-Z_$]*$/.test(id) ? '.'+ id : '['+ JSON.stringify(id) +']');
+}
+
+var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(pkg_name, deps) {
+	deps = deps.filter(function (dep) {
+		return !dep.indirect;
+	});
 	var nameList = JSON.stringify(deps.map(function (dep) {
-			return dep.name;
+			return _parse_pkg_name(dep.id).name;
 		})),
 		requireList = deps.map(function (dep) {
-			return 'require('+ JSON.stringify(dep.name) +')';
+			return 'require('+ JSON.stringify(dep.id) +')';
 		}).join(','),
 		globalList = deps.map(function (dep) {
-			return 'this.'+ dep.id;
+			return _js_ref('this', dep.name);
 		}).join(',');
 	return (function (init) { "use strict";
 			if (typeof define === 'function' && define.amd) {
@@ -23,12 +30,13 @@ var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(deps) {
 			} else if (typeof exports === 'object' && module.exports) {
 				module.exports = init($2); // CommonJS module.
 			} else {
-				this.Sermat = init($3); // Browser.
+				$4 = init($3); // Browser.
 			}
 		} +'')
 		.replace('$1', nameList)
 		.replace('$2', requireList)
-		.replace('$3', globalList);
+		.replace('$3', globalList)
+		.replace('$4', _js_ref('this', pkg_name));
 };
 
 var wrapper_AMD = exports.wrapper_AMD = function wrapper_AMD(deps) {
@@ -42,18 +50,18 @@ var wrapper_AMD = exports.wrapper_AMD = function wrapper_AMD(deps) {
 
 var wrapper_node = exports.wrapper_node = function wrapper_node(deps) {
 	var requireList = deps.map(function (dep) {
-			return 'require('+ JSON.stringify(dep.name) +')';
+			return 'require('+ JSON.stringify(dep.id) +')';
 		}).join(',');
 	return (function (init) { "use strict";
 			module.exports = init($1);
 		} +'').replace('$1', requireList);
 };
 
-var wrapper = exports.wrapper = function wrapper(type, deps) {
+var wrapper = exports.wrapper = function wrapper(type, name, deps) {
 	switch (type.trim().toLowerCase()) {
 		case 'umd':
 			return {
-				banner: '('+ wrapper_UMD(deps) +').call(this,',
+				banner: '('+ wrapper_UMD(name, deps) +').call(this,',
 				footer: ');'
 			};
 		case 'amd':
@@ -70,6 +78,14 @@ var wrapper = exports.wrapper = function wrapper(type, deps) {
 	}
 };
 
+function _parse_pkg_name(name, result) {
+	var m = /^(@.+?)\/(.+?)$/.exec(name);
+	result = result || {};
+	result.scope = m && m[1];
+	result.name = m ? m[2] : name;
+	return result;
+}
+
 /** Dependencies can be expressed by a simple string with the module's name, or an object with many
 properties. This properties include:
 
@@ -80,28 +96,38 @@ properties. This properties include:
 */
 var normalizeDeps = exports.normalizeDeps = function normalizeDeps(grunt, deps) {
 	return !deps ? [] : deps.map(function (dep) {
-		if (typeof dep === 'string') {
-			dep = { name: dep };
-		}
-		if (!dep.path) {
-			dep.absolutePath = require.resolve(dep.name);
-		} else if (path.isAbsolute(dep.path)){
-			dep.absolutePath = dep.path;
-		} else {
-			dep.absolutePath = path.resolve(dep.path);
-		}
-		dep.path = path.relative(path.dirname(module.parent.filename), dep.absolutePath);
-		
-		//FIXME Allow to configure this loading.
-		require(dep.name);
-		dep.module = require.cache[dep.absolutePath];
-
-		if (grunt.file.exists(dep.path +'.map')) {
-			dep.sourceMap = dep.path +'.map';
-		}
-		return dep;
+		return normalizeDep(grunt, dep);
 	});
 };
+
+var normalizeDep = exports.normalizeDep = function normalizeDep(grunt, dep) {
+	if (typeof dep === 'string') {
+		dep = { id: dep };
+	}
+	if (!dep.name) {
+		_parse_pkg_name(dep.id, dep);
+	}
+	if (!dep.path) {
+		dep.absolutePath = require.resolve(dep.id);
+	} else if (path.isAbsolute(dep.path)){
+		dep.absolutePath = dep.path;
+	} else {
+		dep.absolutePath = path.resolve(dep.path);
+	}
+	dep.path = path.relative(path.dirname(module.parent.filename), dep.absolutePath);
+
+	if (!dep.hasOwnProperty('module')) {
+		require(dep.id);
+		dep.module = require.cache[dep.absolutePath];
+	}
+
+	if (grunt.file.exists(dep.path +'.map')) {
+		dep.sourceMap = dep.path +'.map';
+	}
+	return dep;
+};
+
+
 
 /** This try-catch function is used to improve the error reporting if the code fails.
 */
