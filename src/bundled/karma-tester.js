@@ -55,11 +55,14 @@
 		paths: { }
 	};
 	Object.keys(window.__karma__.files).forEach(function (path) {
-		var m = /^\/base\/(?:node_modules\/(.*?)\/|build\/(.*?)\.js$)/.exec(path);
-		if (m) {
-			config.paths[m[1] || m[2]] = path.replace(/\.js$/, '');
+		if (!/(karma-tester|\.test)\.js$/.test(path)) {
+			var m = /^\/base\/(?:node_modules\/(?:@.+?\/)?(.*?)\/|build\/(.*?)\.js$)/.exec(path);
+			if (m) {
+				config.paths[m[1] || m[2]] = path.replace(/\.js$/, '');
+			}
 		}
 	});
+	console.log("RequireJS config: "+ JSON.stringify(config, null, '\t'));
 	require.config(config);
 
 	require(Object.keys(window.__karma__.files) // Dynamically load all test files
