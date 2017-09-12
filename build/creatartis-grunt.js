@@ -3,7 +3,8 @@
 //"use strict";
 
 var path = require('path'),
-	fs = require('fs');
+	fs = require('fs'),
+	inspect = require('util').inspect;
 
 var exports = module.exports;
 
@@ -17,15 +18,22 @@ Miscelaneous functions and definitions.
 checks the Javascript environment and guesses which module definition method to use: AMD, CommonJS
 or script tags.
 */
-var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(deps) {
+function _js_ref(obj, id) {
+	return obj + (/^[a-zA-Z_$][0-9a-zA-Z_$]*$/.test(id) ? '.'+ id : '['+ JSON.stringify(id) +']');
+}
+
+var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(pkg_name, deps) {
+	deps = deps.filter(function (dep) {
+		return !dep.indirect;
+	});
 	var nameList = JSON.stringify(deps.map(function (dep) {
-			return dep.name;
+			return _parse_pkg_name(dep.id).name;
 		})),
 		requireList = deps.map(function (dep) {
-			return 'require('+ JSON.stringify(dep.name) +')';
+			return 'require('+ JSON.stringify(dep.id) +')';
 		}).join(','),
 		globalList = deps.map(function (dep) {
-			return 'this.'+ dep.id;
+			return _js_ref('this', dep.name);
 		}).join(',');
 	return (function (init) { "use strict";
 			if (typeof define === 'function' && define.amd) {
@@ -33,12 +41,13 @@ var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(deps) {
 			} else if (typeof exports === 'object' && module.exports) {
 				module.exports = init($2); // CommonJS module.
 			} else {
-				this.Sermat = init($3); // Browser.
+				$4 = init($3); // Browser.
 			}
 		} +'')
 		.replace('$1', nameList)
 		.replace('$2', requireList)
-		.replace('$3', globalList);
+		.replace('$3', globalList)
+		.replace('$4', _js_ref('this', pkg_name));
 };
 
 var wrapper_AMD = exports.wrapper_AMD = function wrapper_AMD(deps) {
@@ -52,18 +61,18 @@ var wrapper_AMD = exports.wrapper_AMD = function wrapper_AMD(deps) {
 
 var wrapper_node = exports.wrapper_node = function wrapper_node(deps) {
 	var requireList = deps.map(function (dep) {
-			return 'require('+ JSON.stringify(dep.name) +')';
+			return 'require('+ JSON.stringify(dep.id) +')';
 		}).join(',');
 	return (function (init) { "use strict";
 			module.exports = init($1);
 		} +'').replace('$1', requireList);
 };
 
-var wrapper = exports.wrapper = function wrapper(type, deps) {
+var wrapper = exports.wrapper = function wrapper(type, name, deps) {
 	switch (type.trim().toLowerCase()) {
 		case 'umd':
 			return {
-				banner: '('+ wrapper_UMD(deps) +').call(this,',
+				banner: '('+ wrapper_UMD(name, deps) +').call(this,',
 				footer: ');'
 			};
 		case 'amd':
@@ -80,6 +89,14 @@ var wrapper = exports.wrapper = function wrapper(type, deps) {
 	}
 };
 
+function _parse_pkg_name(name, result) {
+	var m = /^(@.+?)\/(.+?)$/.exec(name);
+	result = result || {};
+	result.scope = m && m[1];
+	result.name = m ? m[2] : name;
+	return result;
+}
+
 /** Dependencies can be expressed by a simple string with the module's name, or an object with many
 properties. This properties include:
 
@@ -90,21 +107,38 @@ properties. This properties include:
 */
 var normalizeDeps = exports.normalizeDeps = function normalizeDeps(grunt, deps) {
 	return !deps ? [] : deps.map(function (dep) {
-		if (typeof dep === 'string') {
-			dep = { name: dep };
-		}
-		if (!dep.path) {
-			dep.path = require.resolve(dep.name);
-			if (!grunt.file.exists(dep.path)) {
-				grunt.fail.warn('Could not find module '+ dep.name +' at <'+ path +'>!');
-			}
-		}
-		if (grunt.file.exists(dep.path +'.map')) {
-			dep.sourceMap = dep.path +'.map';
-		}
-		return dep;
+		return normalizeDep(grunt, dep);
 	});
 };
+
+var normalizeDep = exports.normalizeDep = function normalizeDep(grunt, dep) {
+	if (typeof dep === 'string') {
+		dep = { id: dep };
+	}
+	if (!dep.name) {
+		_parse_pkg_name(dep.id, dep);
+	}
+	if (!dep.path) {
+		dep.absolutePath = require.resolve(dep.id);
+	} else if (path.isAbsolute(dep.path)){
+		dep.absolutePath = dep.path;
+	} else {
+		dep.absolutePath = path.resolve(dep.path);
+	}
+	dep.path = path.relative(path.dirname(module.parent.filename), dep.absolutePath);
+
+	if (!dep.hasOwnProperty('module')) {
+		require(dep.id);
+		dep.module = require.cache[dep.absolutePath];
+	}
+
+	if (grunt.file.exists(dep.path +'.map')) {
+		dep.sourceMap = dep.path +'.map';
+	}
+	return dep;
+};
+
+
 
 /** This try-catch function is used to improve the error reporting if the code fails.
 */
@@ -134,7 +168,6 @@ function _loadTask(grunt, task, npmTask) {
 function defaults(grunt, params) {
 	params = Object.assign({
 		pkg_name: grunt.config('pkg.name'),
-		pkg_scope: '',
 		pkg_version: grunt.config('pkg.version'),
 
 		build: 'build/',
@@ -146,12 +179,17 @@ function defaults(grunt, params) {
 		wrapper: 'umd',
 		karma: ['Firefox']
 	}, params);
-
-	var m = /^@([^\/]+)\/(.+)$/.exec(params.pkg_name);
-	if (m) {
-		params.pkg_name = m[2];
-		params.pkg_scope = m[1];
+	params.log = params.log === true ? _log : function () {}; // log does nothing by default.
+	if (params.hasOwnProperty('log') && typeof params.log !== 'function') {
+		throw new Error('`params.log` must be function!');
 	}
+
+	var m = _parse_pkg_name(params.pkg_name);
+	if (m) {
+		params.pkg_name = m.name;
+		params.pkg_scope = m.scope;
+	}
+	params.deps = normalizeDeps(grunt, params.deps);
 
 	params.jshint = Object.assign({
 		loopfunc: true,
@@ -167,7 +205,12 @@ function defaults(grunt, params) {
 	params.perf = params.test &&
 		(typeof params.perf === 'string' ? params.perf : params.perf && params.test +'perf/');
 
+	params.log('defaults', params);
 	return params;
+}
+
+function _log(tag, data) {
+	console.log(tag, inspect(data, { showHidden: false, colors: true, depth: 4 }));
 }
 
 /** ## Configurate `clean` #########################################################################
@@ -175,12 +218,13 @@ function defaults(grunt, params) {
 The `clean` task is used to delete all files in the build folder (`build/`).
 */
 var config_clean = exports.config_clean = function config_clean(grunt, params) {
-	params = defaults(grunt, params);
-	grunt.config.merge({
+	var conf = {
 		clean: {
 			build: [params.build]
 		}
-	});
+	};
+	params.log('config_clean', conf);
+	grunt.config.merge(conf);
 	_loadTask(grunt, 'clean', 'grunt-contrib-clean');
 };
 
@@ -190,21 +234,21 @@ The source files of the project (in the `src/` folder) are concatenated into one
 `grunt-contrib-concat` can also generate source map files, that are very useful for debugging.
 */
 var config_concat = exports.config_concat = function config_concat(grunt, params) {
-	params = defaults(grunt, params);
 	var options = Object.assign({
 			separator: params.separator,
 			sourceMap: params.sourceMap
-		}, wrapper(params.wrapper, params.deps));
-
-	grunt.config.merge({
-		concat: {
-			build: {
-				options: options,
-				src: params.sourceFiles,
-				dest: params.build + params.pkg_name +'.js'
-			},
-		}
-	});
+		}, wrapper(params.wrapper, params.pkg_name, params.deps)),
+		conf = {
+			concat: {
+				build: {
+					options: options,
+					src: params.sourceFiles,
+					dest: params.build + params.pkg_name +'.js'
+				},
+			}
+		};
+	params.log('config_concat', conf);
+	grunt.config.merge(conf);
 	_loadTask(grunt, 'concat', 'grunt-contrib-concat');
 };
 
@@ -214,19 +258,20 @@ Checking the code is imperative in Javascript. The plugin `grunt-contrib-jshint`
 concatenated code, and also the scripts for the test cases.
 */
 var config_jshint = exports.config_jshint = function config_jshint(grunt, params) {
-	params = defaults(grunt, params);
 	var src = [params.build +'*.js'];
 	if (params.specs) {
 		src.push(params.specs +'*.js');
 	}
-	grunt.config.merge({
+	var conf = {
 		jshint: {
 			build: {
 				options: params.jshint,
 				src: src,
 			},
 		}
-	});
+	};
+	params.log('config_jshint', conf);
+	grunt.config.merge(conf);
 	_loadTask(grunt, 'jshint', 'grunt-contrib-jshint');
 };
 
@@ -236,8 +281,7 @@ The plugin `grunt-contrib-uglify` is used to minimize the concatenated code. It 
 source maps.
 */
 var config_uglify = exports.config_uglify = function config_uglify(grunt, params) {
-	params = defaults(grunt, params);
-	grunt.config.merge({
+	var conf = {
 		uglify: {
 			build: {
 				src: params.build + params.pkg_name +'.js',
@@ -251,7 +295,9 @@ var config_uglify = exports.config_uglify = function config_uglify(grunt, params
 				}
 			}
 		}
-	});
+	};
+	params.log('config_uglify', conf);
+	grunt.config.merge(conf);
 	_loadTask(grunt, 'uglify', 'grunt-contrib-uglify');
 };
 
@@ -261,7 +307,6 @@ For testing the library, the built module and its dependencies are copied in the
 This makes it easier to run the test cases, but also to create HTML pages for debugging.
 */
 var config_copy = exports.config_copy = function config_copy(grunt, params) {
-	params = defaults(grunt, params);
 	if (params.hasOwnProperty('test_lib') && !params.test_lib) {
 		return false;
 	} else {
@@ -285,13 +330,15 @@ var config_copy = exports.config_copy = function config_copy(grunt, params) {
 		if (Array.isArray(params.otherCopy)) {
 			files = params.otherCopy.concat(files);
 		}
-		grunt.config.merge({
+		var conf = {
 			copy: {
 				build: {
 					files: files
 				}
 			},
-		});
+		};
+		params.log('config_copy', conf);
+		grunt.config.merge(conf);
 		_loadTask(grunt, 'copy', 'grunt-contrib-copy');
 		return true;
 	}
@@ -303,7 +350,6 @@ Karma is a framework that automates web browsers to run test cases. It is a litt
 properly, but is very useful.
 */
 var config_karma = exports.config_karma = function config_karma(grunt, params) {
-	params = defaults(grunt, params);
 	if (params.hasOwnProperty('karma') && !params.karma) {
 		return false;
 	} else {
@@ -313,9 +359,10 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 					frameworks: ['jasmine', 'requirejs'], // See: https://npmjs.org/browse/keyword/karma-adapter
 					preprocessors: {},
 				     files: [
-						params.test +'karma-tester.js',
+						__dirname +'/karma-tester.js',
 						{ pattern: params.specs +'*.test.js', included: false },
-						{ pattern: params.test_lib + pkgName +'.js', included: false }
+						{ pattern: params.build + pkgName +'.js', included: false },
+						{ pattern: params.build + pkgName +'.js.map', included: false }
 				     ],
 				     exclude: [],
 				     reporters: ['progress'], // https://npmjs.org/browse/keyword/karma-reporter
@@ -327,14 +374,9 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 				}
 			};
 		if (params.sourceMap) { // Source map loader.
-			karma.options.preprocessors[params.test_lib + pkgName +'.js'] = ['sourcemap'];
+			karma.options.preprocessors[params.build +'*.js'] = ['sourcemap'];
 		}
-		params.deps.forEach(function (dep) {
-			karma.options.files.push({
-				pattern: params.test_lib + path.basename(dep.path),
-				included: false
-			});
-		});
+		_karmaFiles(params, karma);
 
 		params.karma.forEach(function (browser) {
 			karma['test_'+ browser.toLowerCase()] = {
@@ -346,29 +388,61 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 				};
 			}
 		});
-		grunt.config.merge({ karma: karma });
+
+		var conf = { karma: karma };
+		params.log('config_karma', conf);
+		grunt.config.merge(conf);
 		_loadTask(grunt, 'karma', 'grunt-karma');
 		return true;
 	}
 };
 
+function _karmaFiles(params, karma) {
+	var pending = params.deps.slice(),
+		included = {};
+	for (var dep = pending.shift(); dep; dep = pending.shift()) {
+		if (!included[dep.id]) {
+			included[dep.id] = (included[dep.id] |0) + 1;
+			karma.options.files.push({
+				pattern: dep.path,
+				included: false
+			});
+			if (dep.sourceMap) {
+				karma.options.preprocessors[dep.path] = ['sourcemap'];
+			}
+			if (dep.module) {
+				dep.module.children.forEach(function (m) {
+					var pathMatch = /node_modules\/((?:@.+?\/)?.+?)\//.exec(m.id);
+					if (pathMatch) {
+						pending.push({ id: pathMatch[1],
+							path: path.relative(path.dirname(module.parent.filename), m.id),
+							absolutePath: m.id,
+							module: m
+						});
+					}
+				});
+			}
+		}
+	}
+}
 
 /** ## Configurate `benchmark` #####################################################################
 
 Performance benchmarks using `grunt-benchmark`.
 */
 var config_benchmark = exports.config_benchmark = function config_benchmark(grunt, params) {
-	params = defaults(grunt, params);
 	if (!params.perf) {
 		return false;
 	} else {
-		grunt.config.merge({
+		var conf = {
 			benchmark: {
 				build: {
-					src: [params.perf]
+					src: [params.perf +'*.perf.js']
 				}
 			}
-		});
+		};
+		params.log('config_benchmark', conf);
+		grunt.config.merge(conf);
 		_loadTask(grunt, 'benchmark', 'grunt-benchmark');
 		return true;
 	}
@@ -380,11 +454,10 @@ Documentation generation uses `grunt-docker`, using the sources at `src/`, `READ
 markdown file in the `docs/` folder.
 */
 var config_docker = exports.config_docker = function config_docker(grunt, params) {
-	params = defaults(grunt, params);
 	if (params.hasOwnProperty('docs') && !params.docs) {
 		return false;
 	} else {
-		grunt.config.merge({
+		var conf = {
 			docker: {
 				build: {
 					src: ['src/**/*.js', 'README.md', params.docs +'*.md'],
@@ -396,7 +469,9 @@ var config_docker = exports.config_docker = function config_docker(grunt, params
 					}
 				}
 			}
-		});
+		};
+		params.log('config_docker', conf);
+		grunt.config.merge(conf);
 		_loadTask(grunt, 'docker', 'grunt-docker');
 		return true;
 	}
@@ -412,7 +487,7 @@ exports.config = function config(grunt, params) {
 	}
 	grunt.file.defaultEncoding = 'utf8';
 
-	params.deps = normalizeDeps(grunt, params.deps);
+	params = defaults(grunt, params);
 	_try(config_clean, grunt, params);
 	_try(config_concat, grunt, params);
 	_try(config_jshint, grunt, params);
