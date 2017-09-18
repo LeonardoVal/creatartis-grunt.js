@@ -3,6 +3,25 @@
 Miscelaneous functions and definitions.
 */
 
+/** This try-catch function is used to improve the error reporting if the code fails.
+*/
+function _try(f, grunt, params) {
+	try {
+		return f(grunt, params);
+	} catch (error) {
+		grunt.log.error('Error while calling '+ f.name +':\n'+ error.stack);
+		throw error;
+	}
+}
+
+/** This function loads a task if it is not already loaded.
+*/
+function _loadTask(grunt, task, npmTask) {
+	if (!grunt.task.exists(task)) {
+		grunt.loadNpmTasks(npmTask);
+	}
+}
+
 /** An UMD wrapper takes a function that builds the module taking its dependencies as arguments. It
 checks the Javascript environment and guesses which module definition method to use: AMD, CommonJS
 or script tags.
@@ -127,23 +146,15 @@ var normalizeDep = exports.normalizeDep = function normalizeDep(grunt, dep) {
 	return dep;
 };
 
-
-
-/** This try-catch function is used to improve the error reporting if the code fails.
+/** Generates a script for configuring RequireJS. Mostly used for setting the `paths` in tests.
 */
-function _try(f, grunt, params) {
-	try {
-		return f(grunt, params);
-	} catch (error) {
-		grunt.log.error('Error while calling '+ f.name +':\n'+ error.stack);
-		throw error;
-	}
-}
-
-/** This function loads a task if it is not already loaded.
-*/
-function _loadTask(grunt, task, npmTask) {
-	if (!grunt.task.exists(task)) {
-		grunt.loadNpmTasks(npmTask);
-	}
-}
+var requireConfig = exports.requireConfig = function requireConfig(config) {
+	var code = ('// Generated code, please do NOT modify.\n('+
+		(function () { "use strict";
+			var config = $1;
+			require.config(config);
+			console.log("RequireJS configuration: "+ JSON.stringify(config, null, '  '));
+		} +')()')
+		.replace('$1', JSON.stringify(config, null, '\t'));
+	return code;
+};
