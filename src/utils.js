@@ -149,12 +149,13 @@ var normalizeDep = exports.normalizeDep = function normalizeDep(grunt, dep) {
 /** Generates a script for configuring RequireJS. Mostly used for setting the `paths` in tests.
 */
 var requireConfig = exports.requireConfig = function requireConfig(config) {
-	var code = ('// Generated code, please do NOT modify.\n('+
+	var code = '// Generated code, please do NOT modify.\n('+
 		(function () { "use strict";
 			var config = $1;
 			require.config(config);
 			console.log("RequireJS configuration: "+ JSON.stringify(config, null, '  '));
 		} +')()')
-		.replace('$1', JSON.stringify(config, null, '\t'));
+		.replace('$1', JSON.stringify(config, null, '\t'))
+	;
 	return code;
 };
