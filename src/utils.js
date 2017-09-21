@@ -149,13 +149,42 @@ var normalizeDep = exports.normalizeDep = function normalizeDep(grunt, dep) {
 /** Generates a script for configuring RequireJS. Mostly used for setting the `paths` in tests.
 */
 var requireConfig = exports.requireConfig = function requireConfig(config) {
-	var code = '// Generated code, please do NOT modify.\n('+
-		(function () { "use strict";
-			var config = $1;
-			require.config(config);
-			console.log("RequireJS configuration: "+ JSON.stringify(config, null, '  '));
-		} +')()')
-		.replace('$1', JSON.stringify(config, null, '\t'))
+	var code = '// Generate*d code, please do NOT modify.\n('+
+
+(function () { "use strict";
+	var config = $1;
+	require.config(config);
+	console.log("RequireJS configuration: "+ JSON.stringify(config, null, '  '));
+} +')();')
+
+		.replace('$1', JSON.stringify(config, null, '\t').replace(/\n/g, '\n\t'))
 	;
 	return code;
+};
+
+/** Calculates the set of all dependencies, direct and indirect.
+*/
+var allDependencies = exports.allDependencies = function allDependencies(params) {
+	var pending = params.deps.slice(),
+		result = {};
+	for (var dep = pending.shift(); dep; dep = pending.shift()) {
+		if (!result[dep.id]) {
+			result[dep.id] = dep;
+			if (dep.module) {
+				dep.module.children.forEach(function (m) {
+					var pathMatch = /node_modules\/((?:@.+?\/)?.+?)\//.exec(m.id);
+					if (pathMatch) {
+						pending.push({
+							id: pathMatch[1],
+							path: path.relative(path.dirname(module.parent.filename), m.id),
+							absolutePath: m.id,
+							module: m
+							//TODO check sourceMap
+						});
+					}
+				});
+			}
+		}
+	}
+	return result;
 };
