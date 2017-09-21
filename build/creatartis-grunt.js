@@ -160,15 +160,44 @@ var normalizeDep = exports.normalizeDep = function normalizeDep(grunt, dep) {
 /** Generates a script for configuring RequireJS. Mostly used for setting the `paths` in tests.
 */
 var requireConfig = exports.requireConfig = function requireConfig(config) {
-	var code = '// Generated code, please do NOT modify.\n('+
-		(function () { "use strict";
-			var config = $1;
-			require.config(config);
-			console.log("RequireJS configuration: "+ JSON.stringify(config, null, '  '));
-		} +')()')
-		.replace('$1', JSON.stringify(config, null, '\t'))
+	var code = '// Generate*d code, please do NOT modify.\n('+
+
+(function () { "use strict";
+	var config = $1;
+	require.config(config);
+	console.log("RequireJS configuration: "+ JSON.stringify(config, null, '  '));
+} +')();')
+
+		.replace('$1', JSON.stringify(config, null, '\t').replace(/\n/g, '\n\t'))
 	;
 	return code;
+};
+
+/** Calculates the set of all dependencies, direct and indirect.
+*/
+var allDependencies = exports.allDependencies = function allDependencies(params) {
+	var pending = params.deps.slice(),
+		result = {};
+	for (var dep = pending.shift(); dep; dep = pending.shift()) {
+		if (!result[dep.id]) {
+			result[dep.id] = dep;
+			if (dep.module) {
+				dep.module.children.forEach(function (m) {
+					var pathMatch = /node_modules\/((?:@.+?\/)?.+?)\//.exec(m.id);
+					if (pathMatch) {
+						pending.push({
+							id: pathMatch[1],
+							path: path.relative(path.dirname(module.parent.filename), m.id),
+							absolutePath: m.id,
+							module: m
+							//TODO check sourceMap
+						});
+					}
+				});
+			}
+		}
+	}
+	return result;
 };
 
 
@@ -212,7 +241,6 @@ function defaults(grunt, params) {
 			return 'src/'+ n +'.js';
 		}));
 
-	params.test_lib = params.test && (params.test_lib || params.test +'lib/');
 	params.specs = params.test && (params.specs || params.test +'specs/');
 	params.perf = params.test &&
 		(typeof params.perf === 'string' ? params.perf : params.perf && params.test +'perf/');
@@ -313,13 +341,45 @@ var config_uglify = exports.config_uglify = function config_uglify(grunt, params
 	_loadTask(grunt, 'uglify', 'grunt-contrib-uglify');
 };
 
+/** ## Write RequireJS configuration script. #######################################################
+
+Dependencies for tests that use RequireJS need a configuration including the paths of each library.
+This task generates a script that makes this configuration.
+*/
+var config_requirejs = exports.config_requirejs = function config_requirejs(grunt, params) {
+	if (params.hasOwnProperty('requirejs') && !params.requirejs) {
+		return false;
+	} else {
+		var allDeps = allDependencies(params),
+			conf = {
+				path: params.requirejs || params.test +'require-config.js',
+				config: { }
+			},
+			dirPath = path.dirname(conf.path);
+		conf.config[params.pkg_name] = path.relative(dirPath, params.build + params.pkg_name);
+		for (var id in allDeps) {
+			conf.config[id] = path.relative(dirPath, allDeps[id].path);
+		}
+		conf = { requirejs: { build: conf }};
+		params.log('config_uglify', conf);
+		grunt.config.merge(conf);
+		grunt.registerMultiTask("requirejs", function () {
+			grunt.file.write(this.data.path, requireConfig({
+				paths: this.data.config
+			}));
+			grunt.log.ok("Generated script "+ this.data.path +".");
+		});
+		return true;
+	}
+};
+
 /** ## Configurate `copy` ##########################################################################
 
-For testing the library, the built module and its dependencies are copied in the `tests/lib` folder.
-This makes it easier to run the test cases, but also to create HTML pages for debugging.
+For testing the library, the built module and its dependencies can be copied in the `tests/lib`
+folder. This may be necessary for some tests.
 */
 var config_copy = exports.config_copy = function config_copy(grunt, params) {
-	if (params.hasOwnProperty('test_lib') && !params.test_lib) {
+	if (!params.test_lib) {
 		return false;
 	} else {
 		var files = ['node_modules/requirejs/require.js'];
@@ -339,9 +399,6 @@ var config_copy = exports.config_copy = function config_copy(grunt, params) {
 			].concat(files.map(function (f) {
 				return { nonull: true, src: f, dest: params.test_lib + path.basename(f) };
 			}));
-		if (Array.isArray(params.otherCopy)) {
-			files = params.otherCopy.concat(files);
-		}
 		var conf = {
 			copy: {
 				build: {
@@ -410,30 +467,16 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 };
 
 function _karmaFiles(params, karma) {
-	var pending = params.deps.slice(),
-		included = {};
-	for (var dep = pending.shift(); dep; dep = pending.shift()) {
-		if (!included[dep.id]) {
-			included[dep.id] = (included[dep.id] |0) + 1;
-			karma.options.files.push({
-				pattern: dep.path,
-				included: false
-			});
-			if (dep.sourceMap) {
-				karma.options.preprocessors[dep.path] = ['sourcemap'];
-			}
-			if (dep.module) {
-				dep.module.children.forEach(function (m) {
-					var pathMatch = /node_modules\/((?:@.+?\/)?.+?)\//.exec(m.id);
-					if (pathMatch) {
-						pending.push({ id: pathMatch[1],
-							path: path.relative(path.dirname(module.parent.filename), m.id),
-							absolutePath: m.id,
-							module: m
-						});
-					}
-				});
-			}
+	var allDeps = allDependencies(params),
+		dep;
+	for (var id in allDeps) {
+		dep = allDeps[id];
+		karma.options.files.push({
+			pattern: dep.path,
+			included: false
+		});
+		if (dep.sourceMap) {
+			karma.options.preprocessors[dep.path] = ['sourcemap'];
 		}
 	}
 }
@@ -505,7 +548,8 @@ exports.config = function config(grunt, params) {
 	_try(config_jshint, grunt, params);
 	_try(config_uglify, grunt, params);
 
-	var doCopy = _try(config_copy, grunt, params),
+	var doRequireJS = _try(config_requirejs, grunt, params),
+		doCopy = _try(config_copy, grunt, params),
 		doTest = _try(config_karma, grunt, params),
 		doDocs = _try(config_docker, grunt, params),
 		doPerf = _try(config_benchmark, grunt, params);
@@ -519,6 +563,9 @@ exports.config = function config(grunt, params) {
 	} else { // Register default tasks
 		var compileTasks = ['clean:build', 'concat:build', 'jshint:build', 'uglify:build'],
 			buildTasks = ['compile'];
+		if (doRequireJS) {
+			compileTasks.push('requirejs:build');
+		}
 		if (doCopy) {
 			compileTasks.push('copy:build');
 		}
