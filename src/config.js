@@ -150,20 +150,22 @@ var config_requirejs = exports.config_requirejs = function config_requirejs(grun
 		var allDeps = allDependencies(params),
 			conf = {
 				path: params.requirejs || params.test +'require-config.js',
-				config: { }
+				config: {
+					paths: {}
+				}
 			},
 			dirPath = path.dirname(conf.path);
-		conf.config[params.pkg_name] = path.relative(dirPath, params.build + params.pkg_name);
+		conf.config.paths[params.pkg_name] = path.relative(dirPath, params.build + params.pkg_name)
+			.replace(/\.js$/, '');
 		for (var id in allDeps) {
-			conf.config[id] = path.relative(dirPath, allDeps[id].path);
+			conf.config.paths[id] = path.relative(dirPath, allDeps[id].path)
+				.replace(/\.js$/, '');
 		}
 		conf = { requirejs: { build: conf }};
 		params.log('config_uglify', conf);
 		grunt.config.merge(conf);
 		grunt.registerMultiTask("requirejs", function () {
-			grunt.file.write(this.data.path, requireConfig({
-				paths: this.data.config
-			}));
+			grunt.file.write(this.data.path, requireConfig(this.data.config));
 			grunt.log.ok("Generated script "+ this.data.path +".");
 		});
 		return true;
