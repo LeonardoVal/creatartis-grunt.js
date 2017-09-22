@@ -43,7 +43,7 @@ function _js_ref(obj, id) {
 
 var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(pkg_name, deps) {
 	deps = deps.filter(function (dep) {
-		return !dep.indirect;
+		return !dep.dev;
 	});
 	var nameList = JSON.stringify(deps.map(function (dep) {
 			return _parse_pkg_name(dep.id).name;
@@ -160,7 +160,7 @@ var normalizeDep = exports.normalizeDep = function normalizeDep(grunt, dep) {
 /** Generates a script for configuring RequireJS. Mostly used for setting the `paths` in tests.
 */
 var requireConfig = exports.requireConfig = function requireConfig(config) {
-	var code = '// Generate*d code, please do NOT modify.\n('+
+	var code = '// Generated code, please do NOT modify.\n('+
 
 (function () { "use strict";
 	var config = $1;
@@ -214,6 +214,7 @@ function defaults(grunt, params) {
 		build: 'build/',
 		test: 'tests/',
 		docs: 'docs/',
+		bundled: [],
 
 		separator: '\n\n',
 		sourceMap: true,
@@ -353,20 +354,22 @@ var config_requirejs = exports.config_requirejs = function config_requirejs(grun
 		var allDeps = allDependencies(params),
 			conf = {
 				path: params.requirejs || params.test +'require-config.js',
-				config: { }
+				config: {
+					paths: {}
+				}
 			},
 			dirPath = path.dirname(conf.path);
-		conf.config[params.pkg_name] = path.relative(dirPath, params.build + params.pkg_name);
+		conf.config.paths[params.pkg_name] = path.relative(dirPath, params.build + params.pkg_name)
+			.replace(/\.js$/, '');
 		for (var id in allDeps) {
-			conf.config[id] = path.relative(dirPath, allDeps[id].path);
+			conf.config.paths[id] = path.relative(dirPath, allDeps[id].path)
+				.replace(/\.js$/, '');
 		}
 		conf = { requirejs: { build: conf }};
 		params.log('config_uglify', conf);
 		grunt.config.merge(conf);
 		grunt.registerMultiTask("requirejs", function () {
-			grunt.file.write(this.data.path, requireConfig({
-				paths: this.data.config
-			}));
+			grunt.file.write(this.data.path, requireConfig(this.data.config));
 			grunt.log.ok("Generated script "+ this.data.path +".");
 		});
 		return true;
@@ -379,26 +382,35 @@ For testing the library, the built module and its dependencies can be copied in 
 folder. This may be necessary for some tests.
 */
 var config_copy = exports.config_copy = function config_copy(grunt, params) {
-	if (!params.test_lib) {
-		return false;
-	} else {
-		var files = ['node_modules/requirejs/require.js'];
+	var files = (params.bundled || []).map(function (b) {
+		if (typeof b === 'string') {
+			return { nonull: true, src: b,
+				dest: params.build + path.basename(b) };
+		} else {
+			return b;
+		}
+	});
+	if (params.test_lib) {
+		files.push(
+			{ nonull: true, src: 'node_modules/requirejs/require.js',
+				dest: params.test_lib +'require.js' },
+			{ nonull: true, expand: true, flatten: true,
+				src: params.build +'*.js', dest: params.test_lib },
+			{ nonull: true, expand: true, flatten: true,
+				src: params.build +'*.js.map', dest: params.test_lib }
+		);
 		params.deps.forEach(function (dep) {
-			files.push(dep.path);
+			files.push({ nonull: true, src: dep.path,
+				dest: params.test_lib + path.basename(dep.path) });
 			if (dep.sourceMap) {
-				files.push(dep.sourceMap);
+				files.push({ nonull: true, src: dep.sourceMap,
+					dest: params.test_lib + path.basename(dep.sourceMap) });
 			}
 		});
-		if (Array.isArray(params.testLibFiles)) {
-			files = files.concat(params.testLibFiles);
-		}
-		files = [	{ nonull: true, expand: true, flatten: true,
-					src: params.build +'*.js', dest: params.test_lib },
-				{ nonull: true, expand: true, flatten: true,
-					src: params.build +'*.js.map', dest: params.test_lib }
-			].concat(files.map(function (f) {
-				return { nonull: true, src: f, dest: params.test_lib + path.basename(f) };
-			}));
+	}
+	if (files.length < 1) {
+		return false;
+	} else {
 		var conf = {
 			copy: {
 				build: {
