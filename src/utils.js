@@ -32,7 +32,7 @@ function _js_ref(obj, id) {
 
 var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(pkg_name, deps) {
 	deps = deps.filter(function (dep) {
-		return !dep.indirect;
+		return !dep.dev;
 	});
 	var nameList = JSON.stringify(deps.map(function (dep) {
 			return _parse_pkg_name(dep.id).name;
