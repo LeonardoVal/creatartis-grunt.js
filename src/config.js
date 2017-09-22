@@ -11,6 +11,7 @@ function defaults(grunt, params) {
 		build: 'build/',
 		test: 'tests/',
 		docs: 'docs/',
+		bundled: [],
 
 		separator: '\n\n',
 		sourceMap: true,
@@ -178,26 +179,35 @@ For testing the library, the built module and its dependencies can be copied in 
 folder. This may be necessary for some tests.
 */
 var config_copy = exports.config_copy = function config_copy(grunt, params) {
-	if (!params.test_lib) {
-		return false;
-	} else {
-		var files = ['node_modules/requirejs/require.js'];
+	var files = (params.bundled || []).map(function (b) {
+		if (typeof b === 'string') {
+			return { nonull: true, src: b,
+				dest: params.build + path.basename(b) };
+		} else {
+			return b;
+		}
+	});
+	if (params.test_lib) {
+		files.push(
+			{ nonull: true, src: 'node_modules/requirejs/require.js',
+				dest: params.test_lib +'require.js' },
+			{ nonull: true, expand: true, flatten: true,
+				src: params.build +'*.js', dest: params.test_lib },
+			{ nonull: true, expand: true, flatten: true,
+				src: params.build +'*.js.map', dest: params.test_lib }
+		);
 		params.deps.forEach(function (dep) {
-			files.push(dep.path);
+			files.push({ nonull: true, src: dep.path,
+				dest: params.test_lib + path.basename(dep.path) });
 			if (dep.sourceMap) {
-				files.push(dep.sourceMap);
+				files.push({ nonull: true, src: dep.sourceMap,
+					dest: params.test_lib + path.basename(dep.sourceMap) });
 			}
 		});
-		if (Array.isArray(params.testLibFiles)) {
-			files = files.concat(params.testLibFiles);
-		}
-		files = [	{ nonull: true, expand: true, flatten: true,
-					src: params.build +'*.js', dest: params.test_lib },
-				{ nonull: true, expand: true, flatten: true,
-					src: params.build +'*.js.map', dest: params.test_lib }
-			].concat(files.map(function (f) {
-				return { nonull: true, src: f, dest: params.test_lib + path.basename(f) };
-			}));
+	}
+	if (files.length < 1) {
+		return false;
+	} else {
 		var conf = {
 			copy: {
 				build: {
