@@ -50,26 +50,14 @@
 
 	// Actual testing brought to you by RequireJS. ////////////////////////////////////////////////
 
-	var config = {
-		baseUrl: '/base',
-		paths: { }
-	};
-	Object.keys(window.__karma__.files).forEach(function (path) {
-		if (!/(karma-tester|\.test)\.js$/.test(path)) {
-			var m = /^\/base\/(?:node_modules\/(?:@.+?\/)?(.*?)\/|build\/(.*?)\.js$)/.exec(path);
-			if (m) {
-				config.paths[m[1] || m[2]] = path.replace(/\.js$/, '');
-			}
-		}
-	});
+	var config = JSON.parse(window.__karma__.config.args[0]);
 	console.log("RequireJS config: "+ JSON.stringify(config, null, '\t'));
 	require.config(config);
-
 	require(Object.keys(window.__karma__.files) // Dynamically load all test files
 			.filter(function (file) { // Filter test modules.
 				return /\.test\.js$/.test(file);
 			}).map(function (file) { // Normalize paths to RequireJS module names.
-				return file.replace(/^\/base\//, '').replace(/\.js$/, '');
+				return file.replace(/^\/base\/(.*?)\.js$/, '$1');
 			}),
 		function () {
 			window.__karma__.start();

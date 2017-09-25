@@ -248,13 +248,21 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 					colors: true,
 				     logLevel: 'INFO',
 				     autoWatch: false,
-				     singleRun: true
+				     singleRun: true,
+					client: {
+						args: [{ // First client.args is used for the RequireJS configuration.
+							baseUrl: '/base',
+							paths: {}
+						}]
+					}
 				}
 			};
 		if (params.sourceMap) { // Source map loader.
 			karma.options.preprocessors[params.build +'*.js'] = ['sourcemap'];
 		}
 		_karmaFiles(params, karma);
+		karma.options.client.args[0].paths[pkgName] = params.build + pkgName;
+		karma.options.client.args[0] = JSON.stringify(karma.options.client.args[0]);
 
 		params.karma.forEach(function (browser) {
 			karma['test_'+ browser.toLowerCase()] = {
@@ -277,6 +285,7 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 
 function _karmaFiles(params, karma) {
 	var allDeps = allDependencies(params),
+		requirePaths = karma.options.client.args[0].paths,
 		dep;
 	for (var id in allDeps) {
 		dep = allDeps[id];
@@ -287,6 +296,7 @@ function _karmaFiles(params, karma) {
 		if (dep.sourceMap) {
 			karma.options.preprocessors[dep.path] = ['sourcemap'];
 		}
+		requirePaths[dep.id] = '/base/'+ dep.path.replace(/\.js$/, '');
 	}
 }
 
