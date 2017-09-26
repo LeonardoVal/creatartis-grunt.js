@@ -163,12 +163,25 @@ var requireConfig = exports.requireConfig = function requireConfig(config) {
 	var code = '// Generated code, please do NOT modify.\n('+
 
 (function () { "use strict";
-	var config = $1;
-	require.config(config);
-	console.log("RequireJS configuration: "+ JSON.stringify(config, null, '  '));
+	define([], function () {
+		var config = $1;
+		if (window.__karma__) {
+			config.baseUrl = '/base';
+			for (var p in config.paths) {
+				config.paths[p] = config.paths[p].replace(/^\.\.\//, '/base/');
+			}
+			config.deps = Object.keys(window.__karma__.files) // Dynamically load all test files
+				.filter(function (file) { // Filter test modules.
+					return /\.test\.js$/.test(file);
+				}).map(function (file) { // Normalize paths to RequireJS module names.
+					return file.replace(/^\/base\/(.*?)\.js$/, '$1');
+				});
+		}
+		require.config(config);
+		console.log("RequireJS configuration: "+ JSON.stringify(config, null, '  '));
+	});
 } +')();')
-
-		.replace('$1', JSON.stringify(config, null, '\t').replace(/\n/g, '\n\t'))
+		.replace('$1', JSON.stringify(config, null, '\t').replace(/\n/g, '\n\t\t'))
 	;
 	return code;
 };
@@ -443,7 +456,8 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 						__dirname +'/karma-tester.js',
 						{ pattern: params.specs +'*.test.js', included: false },
 						{ pattern: params.build + pkgName +'.js', included: false },
-						{ pattern: params.build + pkgName +'.js.map', included: false }
+						{ pattern: params.build + pkgName +'.js.map', included: false },
+						{ pattern: params.test +'require-config.js', included: false }
 				     ],
 				     exclude: [],
 				     reporters: ['progress'], // https://npmjs.org/browse/keyword/karma-reporter
@@ -451,21 +465,13 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 					colors: true,
 				     logLevel: 'INFO',
 				     autoWatch: false,
-				     singleRun: true,
-					client: {
-						args: [{ // First client.args is used for the RequireJS configuration.
-							baseUrl: '/base',
-							paths: {}
-						}]
-					}
+				     singleRun: true
 				}
 			};
 		if (params.sourceMap) { // Source map loader.
 			karma.options.preprocessors[params.build +'*.js'] = ['sourcemap'];
 		}
 		_karmaFiles(params, karma);
-		karma.options.client.args[0].paths[pkgName] = params.build + pkgName;
-		karma.options.client.args[0] = JSON.stringify(karma.options.client.args[0]);
 
 		params.karma.forEach(function (browser) {
 			karma['test_'+ browser.toLowerCase()] = {
@@ -488,7 +494,6 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 
 function _karmaFiles(params, karma) {
 	var allDeps = allDependencies(params),
-		requirePaths = karma.options.client.args[0].paths,
 		dep;
 	for (var id in allDeps) {
 		dep = allDeps[id];
@@ -499,7 +504,6 @@ function _karmaFiles(params, karma) {
 		if (dep.sourceMap) {
 			karma.options.preprocessors[dep.path] = ['sourcemap'];
 		}
-		requirePaths[dep.id] = '/base/'+ dep.path.replace(/\.js$/, '');
 	}
 }
 
