@@ -49,18 +49,19 @@
 	});
 
 	// Actual testing brought to you by RequireJS. ////////////////////////////////////////////////
-
-	var config = JSON.parse(window.__karma__.config.args[0]);
-	console.log("RequireJS config: "+ JSON.stringify(config, null, '\t'));
-	require.config(config);
-	require(Object.keys(window.__karma__.files) // Dynamically load all test files
-			.filter(function (file) { // Filter test modules.
-				return /\.test\.js$/.test(file);
-			}).map(function (file) { // Normalize paths to RequireJS module names.
-				return file.replace(/^\/base\/(.*?)\.js$/, '$1');
-			}),
-		function () {
-			window.__karma__.start();
+	var karmaFiles = window.__karma__.files,
+		testFiles = [],
+		requireConfigPath;
+	for (var p in window.__karma__.files) {
+		if (/require-config/.test(p)) {
+			requireConfigPath = p;
+		} else if (/\.test\.js$/.test(p)) {
+			testFiles.push(p.replace(/^\/base\/(.*?)\.js$/, '$1'));
 		}
-	);
+	}
+	require([requireConfigPath], function () {
+		require(testFiles, function () {
+			window.__karma__.start();
+		});
+	});
 })();
