@@ -38,10 +38,26 @@ function defaults(grunt, params) {
 		.concat((params.sourceNames || []).map(function (n) {
 			return 'src/'+ n +'.js';
 		}));
-
 	params.specs = params.test && (params.specs || params.test +'specs/');
 	params.perf = params.test &&
 		(typeof params.perf === 'string' ? params.perf : params.perf && params.test +'perf/');
+
+	var wrappers = params.wrapper.split(/[\s,.:;]+/);
+	if (wrappers.length > 1) {
+		params.__builds__ = wrappers.map(function (wrapType) {
+			return {
+				name: 'build_'+ wrapType,
+				fileName: params.build + params.pkg_name +'-'+ wrapType,
+				wrapType: wrapType
+			};
+		});
+	} else {
+		params.__builds__ = [{
+			name: 'build',
+			fileName: params.build + params.pkg_name,
+			wrapType: wrappers[0]
+		}];
+	}
 
 	params.log('defaults', params);
 	return params;
@@ -72,19 +88,20 @@ The source files of the project (in the `src/` folder) are concatenated into one
 `grunt-contrib-concat` can also generate source map files, that are very useful for debugging.
 */
 var config_concat = exports.config_concat = function config_concat(grunt, params) {
-	var options = Object.assign({
-			separator: params.separator,
-			sourceMap: params.sourceMap
-		}, wrapper(params.wrapper, params.pkg_name, params.deps)),
-		conf = {
-			concat: {
-				build: {
-					options: options,
-					src: params.sourceFiles,
-					dest: params.build + params.pkg_name +'.js'
-				},
-			}
+	var conf = {
+			concat: { }
 		};
+	params.__builds__.forEach(function (b) {
+		var options = Object.assign({
+				separator: params.separator,
+				sourceMap: params.sourceMap
+			}, wrapper(b.wrapType, params.pkg_name, params.deps));
+		conf.concat[b.name] = {
+			options: options,
+			src: params.sourceFiles,
+			dest: b.fileName +'.js'
+		};
+	});
 	params.log('config_concat', conf);
 	grunt.config.merge(conf);
 	_loadTask(grunt, 'concat', 'grunt-contrib-concat');
@@ -120,20 +137,24 @@ source maps.
 */
 var config_uglify = exports.config_uglify = function config_uglify(grunt, params) {
 	var conf = {
-		uglify: {
-			build: {
-				src: params.build + params.pkg_name +'.js',
-				dest: params.build + params.pkg_name +'.min.js',
-				options: {
-					banner: '//! '+ params.pkg_name +' '+ params.pkg_version +'\n',
-					report: 'min',
-					sourceMap: params.sourceMap,
-					sourceMapIn: params.build + params.pkg_name +'.js.map',
-					sourceMapName: params.build + params.pkg_name +'.min.js.map'
-				}
-			}
+			uglify: { }
+		};
+	params.__builds__.forEach(function (b) {
+		var options = {
+				banner: '//! '+ params.pkg_name +' '+ params.pkg_version +'\n',
+				report: 'min',
+				sourceMap: params.sourceMap
+		};
+		if (params.sourceMap) {
+			options.sourceMapIn = b.fileName +'.js.map';
+			options.sourceMapName = b.fileName +'-min.js.map';
 		}
-	};
+		conf.uglify[b.name] = {
+			options: options,
+			src: b.fileName +'.js',
+			dest: b.fileName +'-min.js'
+		};
+	});
 	params.log('config_uglify', conf);
 	grunt.config.merge(conf);
 	_loadTask(grunt, 'uglify', 'grunt-contrib-uglify');
@@ -371,7 +392,13 @@ exports.config = function config(grunt, params) {
 			}
 		}
 	} else { // Register default tasks
-		var compileTasks = ['clean:build', 'concat:build', 'jshint:build', 'uglify:build'],
+		grunt.registerTask('concat-all', params.__builds__.map(function (b) {
+			return 'concat:'+ b.name;
+		}));
+		grunt.registerTask('uglify-all', params.__builds__.map(function (b) {
+			return 'uglify:'+ b.name;
+		}));
+		var compileTasks = ['clean:build', 'concat-all', 'jshint:build', 'uglify-all'],
 			buildTasks = ['compile'];
 		if (doRequireJS) {
 			compileTasks.push('requirejs:build');
@@ -384,7 +411,10 @@ exports.config = function config(grunt, params) {
 			grunt.registerTask('test', ['compile', 'karma:build']);
 			buildTasks = ['test'];
 		}
-		grunt.registerTask('build', doDocs ? buildTasks.concat(['docker:build']) : buildTasks);
+		if (doDocs) {
+			buildTasks.push('docker:build');
+		}
+		grunt.registerTask('build', buildTasks);
 		if (doPerf) {
 			grunt.registerTask('perf', buildTasks.concat(['benchmark:build']));
 		}
