@@ -68,29 +68,41 @@ var wrapper_AMD = exports.wrapper_AMD = function wrapper_AMD(deps) {
 };
 
 var wrapper_node = exports.wrapper_node = function wrapper_node(deps) {
-	var requireList = deps.map(function (dep) {
-			return 'require('+ JSON.stringify(dep.id) +')';
-		}).join(',');
+	var globalList = deps.map(function (dep) {
+		return _js_ref('this', dep.name);
+	}).join(',');
 	return (function (init) { "use strict";
 			module.exports = init($1);
 		} +'').replace('$1', requireList);
 };
 
+var wrapper_tag = exports.wrapper_tag = function wrapper_tag(pkg_name, deps) {
+	var globalList = deps.map(function (dep) {
+			return 'this.'+ dep.name;
+		}).join(',');
+	return (function (init) { "use strict";
+			$1 = init($2);
+		} +'')
+		.replace('$1', _js_ref('this', pkg_name))
+		.replace('$2', globalList);
+};
+
 var wrapper = exports.wrapper = function wrapper(type, name, deps) {
 	switch (type.trim().toLowerCase()) {
-		case 'umd':
-			return {
+		case 'umd': return {
 				banner: '('+ wrapper_UMD(name, deps) +').call(this,',
 				footer: ');'
 			};
-		case 'amd':
-			return {
+		case 'amd': return {
 				banner: '('+ wrapper_AMD(deps) +').call(this,',
 				footer: ');'
 			};
-		case 'node':
-			return {
+		case 'node': return {
 				banner: '('+ wrapper_node(deps) +').call(this,',
+				footer: ');'
+			};
+		case 'tag': return {
+				banner: '('+ wrapper_tag(name, deps) +').call(this,',
 				footer: ');'
 			};
 		default: return {};
