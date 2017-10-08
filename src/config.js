@@ -1,71 +1,7 @@
-/**TODO
+/** # Grunt configuration.
+
+TODO
 */
-
-/** Configuration parameters' default values.
-*/
-function defaults(grunt, params) {
-	params = Object.assign({
-		pkg_name: grunt.config('pkg.name'),
-		pkg_version: grunt.config('pkg.version'),
-
-		build: 'build/',
-		test: 'tests/',
-		docs: 'docs/',
-		bundled: [],
-
-		separator: '\n\n',
-		sourceMap: true,
-		wrapper: 'umd',
-		karma: ['Firefox']
-	}, params);
-	params.log = params.log === true ? _log : function () {}; // log does nothing by default.
-	if (params.hasOwnProperty('log') && typeof params.log !== 'function') {
-		throw new Error('`params.log` must be function!');
-	}
-
-	var m = _parse_pkg_name(params.pkg_name);
-	if (m) {
-		params.pkg_name = m.name;
-		params.pkg_scope = m.scope;
-	}
-	params.deps = normalizeDeps(grunt, params.deps);
-
-	params.jshint = Object.assign({
-		loopfunc: true,
-		boss: true
-	}, params.jshint);
-	params.sourceFiles = (params.sourceFiles || [])
-		.concat((params.sourceNames || []).map(function (n) {
-			return 'src/'+ n +'.js';
-		}));
-	params.specs = params.test && (params.specs || params.test +'specs/');
-	params.perf = params.test &&
-		(typeof params.perf === 'string' ? params.perf : params.perf && params.test +'perf/');
-
-	var wrappers = params.wrapper.split(/[\s,.:;]+/);
-	if (wrappers.length > 1) {
-		params.__builds__ = wrappers.map(function (wrapType) {
-			return {
-				name: 'build_'+ wrapType,
-				fileName: params.build + params.pkg_name +'-'+ wrapType,
-				wrapType: wrapType
-			};
-		});
-	} else {
-		params.__builds__ = [{
-			name: 'build',
-			fileName: params.build + params.pkg_name,
-			wrapType: wrappers[0]
-		}];
-	}
-
-	params.log('defaults', params);
-	return params;
-}
-
-function _log(tag, data) {
-	console.log(tag, inspect(data, { showHidden: false, colors: true, depth: 4 }));
-}
 
 /** ## Configurate `clean` #########################################################################
 
@@ -74,7 +10,7 @@ The `clean` task is used to delete all files in the build folder (`build/`).
 var config_clean = exports.config_clean = function config_clean(grunt, params) {
 	var conf = {
 		clean: {
-			build: [params.build]
+			build: [params.paths.build]
 		}
 	};
 	params.log('config_clean', conf);
@@ -88,18 +24,20 @@ The source files of the project (in the `src/` folder) are concatenated into one
 `grunt-contrib-concat` can also generate source map files, that are very useful for debugging.
 */
 var config_concat = exports.config_concat = function config_concat(grunt, params) {
-	var conf = {
+	var targets = params.targets,
+		conf = {
 			concat: { }
 		};
-	params.__builds__.forEach(function (b) {
-		var options = Object.assign({
+	Object.keys(targets).forEach(function (k) {
+		var t = targets[k],
+			options = Object.assign({
 				separator: params.separator,
 				sourceMap: params.sourceMap
-			}, wrapper(b.wrapType, params.pkg_name, params.deps));
-		conf.concat[b.name] = {
+			}, wrapper(b.wrapper, params.pkgName, params.deps));
+		conf.concat[k] = {
 			options: options,
 			src: params.sourceFiles,
-			dest: b.fileName +'.js'
+			dest: t.fileName +'.js'
 		};
 	});
 	params.log('config_concat', conf);
@@ -113,18 +51,18 @@ Checking the code is imperative in Javascript. The plugin `grunt-contrib-jshint`
 concatenated code, and also the scripts for the test cases.
 */
 var config_jshint = exports.config_jshint = function config_jshint(grunt, params) {
-	var src = [params.build +'*.js'];
-	if (params.specs) {
-		src.push(params.specs +'*.js');
-	}
-	var conf = {
-		jshint: {
-			build: {
-				options: params.jshint,
-				src: src,
-			},
-		}
-	};
+	var src = [
+			params.paths.build +'*.js',
+			params.paths.specs +'*.js'
+		],
+		conf = {
+			jshint: {
+				build: {
+					options: params.jshint,
+					src: src,
+				},
+			}
+		};
 	params.log('config_jshint', conf);
 	grunt.config.merge(conf);
 	_loadTask(grunt, 'jshint', 'grunt-contrib-jshint');
@@ -136,23 +74,25 @@ The plugin `grunt-contrib-uglify` is used to minimize the concatenated code. It 
 source maps.
 */
 var config_uglify = exports.config_uglify = function config_uglify(grunt, params) {
-	var conf = {
+	var targets = params.targets,
+		conf = {
 			uglify: { }
 		};
-	params.__builds__.forEach(function (b) {
-		var options = {
-				banner: '//! '+ params.pkg_name +' '+ params.pkg_version +'\n',
+	Object.keys(targets).forEach(function (k) {
+		var t = targets[k],
+			options = {
+				banner: '//! '+ params.pkgName +' '+ params.pkgVersion +'\n',
 				report: 'min',
 				sourceMap: params.sourceMap
 		};
 		if (params.sourceMap) {
-			options.sourceMapIn = b.fileName +'.js.map';
-			options.sourceMapName = b.fileName +'-min.js.map';
+			options.sourceMapIn = t.fileName +'.js.map';
+			options.sourceMapName = t.fileName +'-min.js.map';
 		}
-		conf.uglify[b.name] = {
+		conf.uglify[k] = {
 			options: options,
-			src: b.fileName +'.js',
-			dest: b.fileName +'-min.js'
+			src: t.fileName +'.js',
+			dest: t.fileName +'-min.js'
 		};
 	});
 	params.log('config_uglify', conf);
@@ -171,13 +111,13 @@ var config_requirejs = exports.config_requirejs = function config_requirejs(grun
 	} else {
 		var allDeps = allDependencies(params),
 			conf = {
-				path: params.requirejs || params.test +'require-config.js',
+				path: params.requirejs || params.paths.test +'require-config.js',
 				config: {
 					paths: {}
 				}
 			},
 			dirPath = path.dirname(conf.path);
-		conf.config.paths[params.pkg_name] = path.relative(dirPath, params.build + params.pkg_name)
+		conf.config.paths[params.pkgName] = path.relative(dirPath, params.paths.build + params.pkgName)
 			.replace(/\.js$/, '');
 		for (var id in allDeps) {
 			conf.config.paths[id] = path.relative(dirPath, allDeps[id].path)
@@ -200,29 +140,30 @@ For testing the library, the built module and its dependencies can be copied in 
 folder. This may be necessary for some tests.
 */
 var config_copy = exports.config_copy = function config_copy(grunt, params) {
-	var files = (params.bundled || []).map(function (b) {
+	var paths = params.paths,
+		files = (params.bundled || []).map(function (b) {
 		if (typeof b === 'string') {
 			return { nonull: true, src: b,
-				dest: params.build + path.basename(b) };
+				dest: params.paths.build + path.basename(b) };
 		} else {
 			return b;
 		}
 	});
-	if (params.test_lib) {
+	if (paths.test_lib) {
 		files.push(
 			{ nonull: true, src: 'node_modules/requirejs/require.js',
-				dest: params.test_lib +'require.js' },
+				dest: paths.test_lib +'require.js' },
 			{ nonull: true, expand: true, flatten: true,
-				src: params.build +'*.js', dest: params.test_lib },
+				src: paths.build +'*.js', dest: paths.test_lib },
 			{ nonull: true, expand: true, flatten: true,
-				src: params.build +'*.js.map', dest: params.test_lib }
+				src: paths.build +'*.js.map', dest: paths.test_lib }
 		);
 		params.deps.forEach(function (dep) {
 			files.push({ nonull: true, src: dep.path,
-				dest: params.test_lib + path.basename(dep.path) });
+				dest: paths.test_lib + path.basename(dep.path) });
 			if (dep.sourceMap) {
 				files.push({ nonull: true, src: dep.sourceMap,
-					dest: params.test_lib + path.basename(dep.sourceMap) });
+					dest: paths.test_lib + path.basename(dep.sourceMap) });
 			}
 		});
 	}
@@ -252,17 +193,18 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 	if (params.hasOwnProperty('karma') && !params.karma) {
 		return false;
 	} else {
-		var pkgName = params.pkg_name,
+		var pkgName = params.pkgName,
+			paths = params.paths,
 			karma = {
 				options: {
 					frameworks: ['jasmine', 'requirejs'], // See: https://npmjs.org/browse/keyword/karma-adapter
 					preprocessors: {},
 				     files: [
 						__dirname +'/karma-tester.js',
-						{ pattern: params.specs +'*.test.js', included: false },
-						{ pattern: params.build + pkgName +'.js', included: false },
-						{ pattern: params.build + pkgName +'.js.map', included: false },
-						{ pattern: params.test +'require-config.js', included: false }
+						{ pattern: paths.specs +'*.test.js', included: false },
+						{ pattern: paths.build + pkgName +'.js', included: false },
+						{ pattern: paths.build + pkgName +'.js.map', included: false },
+						{ pattern: paths.test +'require-config.js', included: false }
 				     ],
 				     exclude: [],
 				     reporters: ['progress'], // https://npmjs.org/browse/keyword/karma-reporter
@@ -274,7 +216,7 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 				}
 			};
 		if (params.sourceMap) { // Source map loader.
-			karma.options.preprocessors[params.build +'*.js'] = ['sourcemap'];
+			karma.options.preprocessors[paths.build +'*.js'] = ['sourcemap'];
 		}
 		_karmaFiles(params, karma);
 
@@ -346,8 +288,8 @@ var config_docker = exports.config_docker = function config_docker(grunt, params
 		var conf = {
 			docker: {
 				build: {
-					src: ['src/**/*.js', 'README.md', params.docs +'*.md'],
-					dest: params.docs +'docker',
+					src: ['src/**/*.js', 'README.md', params.paths.docs +'*.md'],
+					dest: params.paths.docs +'docker',
 					options: {
 						colourScheme: 'borland',
 						ignoreHidden: true,
@@ -392,11 +334,11 @@ exports.config = function config(grunt, params) {
 			}
 		}
 	} else { // Register default tasks
-		grunt.registerTask('concat-all', params.__builds__.map(function (b) {
-			return 'concat:'+ b.name;
+		grunt.registerTask('concat-all', Object.keys(params.targets).map(function (t) {
+			return 'concat:'+ t;
 		}));
-		grunt.registerTask('uglify-all', params.__builds__.map(function (b) {
-			return 'uglify:'+ b.name;
+		grunt.registerTask('uglify-all', Object.keys(params.targets).map(function (t) {
+			return 'uglify:'+ t;
 		}));
 		var compileTasks = ['clean:build', 'concat-all', 'jshint:build', 'uglify-all'],
 			buildTasks = ['compile'];
