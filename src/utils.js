@@ -3,6 +3,12 @@
 Miscelaneous functions and definitions.
 */
 
+/** Default log function.
+*/
+var _log = exports._log = function _log(tag, data) {
+	console.log(tag, inspect(data, { showHidden: false, colors: true, depth: 4 }));
+};
+
 /** This try-catch function is used to improve the error reporting if the code fails.
 */
 function _try(f, grunt, params) {
@@ -105,11 +111,14 @@ var wrapper = exports.wrapper = function wrapper(type, name, deps) {
 				banner: '('+ wrapper_tag(name, deps) +').call(this,',
 				footer: ');'
 			};
+		case 'none': return {
+				banner: '', footer: ''
+			};
 		default: return {};
 	}
 };
 
-function _parse_pkg_name(name, result) {
+function _parse_pkgName(name, result) {
 	var m = /^(@.+?)\/(.+?)$/.exec(name);
 	result = result || {};
 	result.scope = m && m[1];
