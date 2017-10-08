@@ -9,7 +9,7 @@ The method `config` takes the following parameters.
 var __param_pkgName__ = exports.__param_pkgName__ = function __param_pkgName__(params, grunt) {
 	var pkgName = params.pkgName || grunt.config('pkg.name');
 	if (!params.pkgScope) {
-		m = _parse_pkgName(params.pkgName);
+		m = _parse_pkgName(pkgName);
 		if (m) {
 			params.pkgName = m.name;
 			params.pkgScope = m.scope;
@@ -51,18 +51,15 @@ var __params_paths__ = exports.__params_paths__ = function __params_paths__(para
 		docs: 'docs/'
 	}, params.paths);
 	params.paths = paths;
-	paths.specs = paths.specs || params.test +'specs/';
-	paths.perf = paths.perf || params.test +'perf/';
+	paths.specs = paths.specs || paths.test +'specs/';
+	paths.perf = paths.perf || paths.test +'perf/';
 	return params;
 };
 
 /** + `builds`
 */
-var __param_targets__ = exports.__param_targets__ = function __param_targets__(grunt, params) {
-	var targets = params.targets;
-	if (!targets) {
-		targets = 'umd'; // Make a UMD build by default.
-	}
+var __param_targets__ = exports.__param_targets__ = function __param_targets__(params) {
+	var targets = params.targets || 'umd'; // Make a UMD build by default.
 	if (typeof targets === 'string') {
 		targets = targets.split(/[\s,.:;]+/);
 	}
@@ -70,7 +67,7 @@ var __param_targets__ = exports.__param_targets__ = function __param_targets__(g
 		if (targets.length === 1) {
 			params.targets = { build: {
 				fileName: params.paths.build + params.pkgName,
-				wrapper: t
+				wrapper: targets[0]
 			} };
 		} else {
 			params.targets = {};
@@ -86,7 +83,7 @@ var __param_targets__ = exports.__param_targets__ = function __param_targets__(g
 	if (typeof targets === 'object' && targets) {
 		params.targets = {};
 		Object.keys(targets).forEach(function (k) {
-			var t = params.targets[k];
+			var t = targets[k];
 			params.targets[k] = typeof t === 'string' ? {
 				fileName: params.paths.build + params.pkgName +'-'+ t,
 				wrapper: t

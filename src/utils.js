@@ -41,7 +41,7 @@ var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(pkg_name, deps) {
 		return !dep.dev;
 	});
 	var nameList = JSON.stringify(deps.map(function (dep) {
-			return _parse_pkg_name(dep.id).name;
+			return _parse_pkgName(dep.id).name;
 		})),
 		requireList = deps.map(function (dep) {
 			return 'require('+ JSON.stringify(dep.id) +')';
@@ -111,7 +111,7 @@ var wrapper = exports.wrapper = function wrapper(type, name, deps) {
 				banner: '('+ wrapper_tag(name, deps) +').call(this,',
 				footer: ');'
 			};
-		case 'none': return {
+		case 'raw': return {
 				banner: '', footer: ''
 			};
 		default: return {};
@@ -145,7 +145,7 @@ var normalizeDep = exports.normalizeDep = function normalizeDep(grunt, dep) {
 		dep = { id: dep };
 	}
 	if (!dep.name) {
-		_parse_pkg_name(dep.id, dep);
+		_parse_pkgName(dep.id, dep);
 	}
 	if (!dep.path) {
 		dep.absolutePath = require.resolve(dep.id);

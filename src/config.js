@@ -33,7 +33,7 @@ var config_concat = exports.config_concat = function config_concat(grunt, params
 			options = Object.assign({
 				separator: params.separator,
 				sourceMap: params.sourceMap
-			}, wrapper(b.wrapper, params.pkgName, params.deps));
+			}, wrapper(t.wrapper, params.pkgName, params.deps));
 		conf.concat[k] = {
 			options: options,
 			src: params.sourceFiles,
@@ -124,7 +124,7 @@ var config_requirejs = exports.config_requirejs = function config_requirejs(grun
 				.replace(/\.js$/, '');
 		}
 		conf = { requirejs: { build: conf }};
-		params.log('config_uglify', conf);
+		params.log('config_requirejs', conf);
 		grunt.config.merge(conf);
 		grunt.registerMultiTask("requirejs", function () {
 			grunt.file.write(this.data.path, requireConfig(this.data.config));
@@ -315,7 +315,7 @@ exports.config = function config(grunt, params) {
 	}
 	grunt.file.defaultEncoding = 'utf8';
 
-	params = defaults(grunt, params);
+	params = __params__(grunt, params);
 	_try(config_clean, grunt, params);
 	_try(config_concat, grunt, params);
 	_try(config_jshint, grunt, params);

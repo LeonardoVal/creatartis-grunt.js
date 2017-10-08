@@ -52,7 +52,7 @@ var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(pkg_name, deps) {
 		return !dep.dev;
 	});
 	var nameList = JSON.stringify(deps.map(function (dep) {
-			return _parse_pkg_name(dep.id).name;
+			return _parse_pkgName(dep.id).name;
 		})),
 		requireList = deps.map(function (dep) {
 			return 'require('+ JSON.stringify(dep.id) +')';
@@ -122,7 +122,7 @@ var wrapper = exports.wrapper = function wrapper(type, name, deps) {
 				banner: '('+ wrapper_tag(name, deps) +').call(this,',
 				footer: ');'
 			};
-		case 'none': return {
+		case 'raw': return {
 				banner: '', footer: ''
 			};
 		default: return {};
@@ -156,7 +156,7 @@ var normalizeDep = exports.normalizeDep = function normalizeDep(grunt, dep) {
 		dep = { id: dep };
 	}
 	if (!dep.name) {
-		_parse_pkg_name(dep.id, dep);
+		_parse_pkgName(dep.id, dep);
 	}
 	if (!dep.path) {
 		dep.absolutePath = require.resolve(dep.id);
@@ -246,7 +246,7 @@ The method `config` takes the following parameters.
 var __param_pkgName__ = exports.__param_pkgName__ = function __param_pkgName__(params, grunt) {
 	var pkgName = params.pkgName || grunt.config('pkg.name');
 	if (!params.pkgScope) {
-		m = _parse_pkgName(params.pkgName);
+		m = _parse_pkgName(pkgName);
 		if (m) {
 			params.pkgName = m.name;
 			params.pkgScope = m.scope;
@@ -288,18 +288,15 @@ var __params_paths__ = exports.__params_paths__ = function __params_paths__(para
 		docs: 'docs/'
 	}, params.paths);
 	params.paths = paths;
-	paths.specs = paths.specs || params.test +'specs/';
-	paths.perf = paths.perf || params.test +'perf/';
+	paths.specs = paths.specs || paths.test +'specs/';
+	paths.perf = paths.perf || paths.test +'perf/';
 	return params;
 };
 
 /** + `builds`
 */
-var __param_targets__ = exports.__param_targets__ = function __param_targets__(grunt, params) {
-	var targets = params.targets;
-	if (!targets) {
-		targets = 'umd'; // Make a UMD build by default.
-	}
+var __param_targets__ = exports.__param_targets__ = function __param_targets__(params) {
+	var targets = params.targets || 'umd'; // Make a UMD build by default.
 	if (typeof targets === 'string') {
 		targets = targets.split(/[\s,.:;]+/);
 	}
@@ -307,7 +304,7 @@ var __param_targets__ = exports.__param_targets__ = function __param_targets__(g
 		if (targets.length === 1) {
 			params.targets = { build: {
 				fileName: params.paths.build + params.pkgName,
-				wrapper: t
+				wrapper: targets[0]
 			} };
 		} else {
 			params.targets = {};
@@ -323,7 +320,7 @@ var __param_targets__ = exports.__param_targets__ = function __param_targets__(g
 	if (typeof targets === 'object' && targets) {
 		params.targets = {};
 		Object.keys(targets).forEach(function (k) {
-			var t = params.targets[k];
+			var t = targets[k];
 			params.targets[k] = typeof t === 'string' ? {
 				fileName: params.paths.build + params.pkgName +'-'+ t,
 				wrapper: t
@@ -417,7 +414,7 @@ var config_concat = exports.config_concat = function config_concat(grunt, params
 			options = Object.assign({
 				separator: params.separator,
 				sourceMap: params.sourceMap
-			}, wrapper(b.wrapper, params.pkgName, params.deps));
+			}, wrapper(t.wrapper, params.pkgName, params.deps));
 		conf.concat[k] = {
 			options: options,
 			src: params.sourceFiles,
@@ -508,7 +505,7 @@ var config_requirejs = exports.config_requirejs = function config_requirejs(grun
 				.replace(/\.js$/, '');
 		}
 		conf = { requirejs: { build: conf }};
-		params.log('config_uglify', conf);
+		params.log('config_requirejs', conf);
 		grunt.config.merge(conf);
 		grunt.registerMultiTask("requirejs", function () {
 			grunt.file.write(this.data.path, requireConfig(this.data.config));
@@ -699,7 +696,7 @@ exports.config = function config(grunt, params) {
 	}
 	grunt.file.defaultEncoding = 'utf8';
 
-	params = defaults(grunt, params);
+	params = __params__(grunt, params);
 	_try(config_clean, grunt, params);
 	_try(config_concat, grunt, params);
 	_try(config_jshint, grunt, params);
