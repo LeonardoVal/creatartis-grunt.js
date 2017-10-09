@@ -116,11 +116,13 @@ var config_requirejs = exports.config_requirejs = function config_requirejs(grun
 					paths: {}
 				}
 			},
-			dirPath = path.dirname(conf.path);
+			dirPath = path.dirname(conf.path),
+			dep, name;
 		conf.config.paths[params.pkgName] = path.relative(dirPath, params.paths.build + params.pkgName)
 			.replace(/\.js$/, '');
 		for (var id in allDeps) {
-			conf.config.paths[id] = path.relative(dirPath, allDeps[id].path)
+			dep = allDeps[id];
+			conf.config.paths[_parse_pkgName(dep.id).name] = path.relative(dirPath, dep.path)
 				.replace(/\.js$/, '');
 		}
 		conf = { requirejs: { build: conf }};
