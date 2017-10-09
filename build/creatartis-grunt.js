@@ -468,12 +468,12 @@ var config_uglify = exports.config_uglify = function config_uglify(grunt, params
 		};
 		if (params.sourceMap) {
 			options.sourceMapIn = t.fileName +'.js.map';
-			options.sourceMapName = t.fileName +'-min.js.map';
+			options.sourceMapName = t.fileName +'.min.js.map';
 		}
 		conf.uglify[k] = {
 			options: options,
 			src: t.fileName +'.js',
-			dest: t.fileName +'-min.js'
+			dest: t.fileName +'.min.js'
 		};
 	});
 	params.log('config_uglify', conf);
