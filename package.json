@@ -4,15 +4,15 @@
 	"keywords": [
 		"grunt"
 	],
-	"version": "0.0.8",
-	"homepage": "https://github.com/LeonardoVal/creatartis-grunt",
+	"version": "0.0.9",
+	"homepage": "https://github.com/LeonardoVal/creatartis-grunt.js",
 	"author": {
 		"name": "Leonardo Val",
 		"email": "leonardo.val@creatartis.com"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git://github.com/LeonardoVal/creatartis-grunt.git"
+		"url": "git://github.com/LeonardoVal/creatartis-grunt.js.git"
 	},
 	"license": "MIT",
 	"main": "build/creatartis-grunt.js",
