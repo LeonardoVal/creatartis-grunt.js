@@ -76,7 +76,9 @@ var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(pkg_name, deps) {
 };
 
 var wrapper_AMD = exports.wrapper_AMD = function wrapper_AMD(deps) {
-	var nameList = JSON.stringify(deps.map(function (dep) {
+	var nameList = JSON.stringify(deps.filter(function (dep) {
+			return !dep.dev;
+		}).map(function (dep) {
 			return dep.name;
 		}));
 	return (function (init) { "use strict";
@@ -85,7 +87,9 @@ var wrapper_AMD = exports.wrapper_AMD = function wrapper_AMD(deps) {
 };
 
 var wrapper_node = exports.wrapper_node = function wrapper_node(deps) {
-	var globalList = deps.map(function (dep) {
+	var globalList = deps.filter(function (dep) {
+		return !dep.dev;
+	}).map(function (dep) {
 		return _js_ref('this', dep.name);
 	}).join(',');
 	return (function (init) { "use strict";
@@ -94,7 +98,9 @@ var wrapper_node = exports.wrapper_node = function wrapper_node(deps) {
 };
 
 var wrapper_tag = exports.wrapper_tag = function wrapper_tag(pkg_name, deps) {
-	var globalList = deps.map(function (dep) {
+	var globalList = deps.filter(function (dep) {
+			return !dep.dev;
+		}).map(function (dep) {
 			return 'this.'+ dep.name;
 		}).join(',');
 	return (function (init) { "use strict";
