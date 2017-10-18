@@ -197,7 +197,7 @@ var requireConfig = exports.requireConfig = function requireConfig(config) {
 			for (var p in config.paths) {
 				config.paths[p] = config.paths[p]
 					.replace(/\\/g, '/') // For paths on Windows.
-					.replace(/^\.\.\//, '/base');
+					.replace(/^\.\.\//, '/base/');
 			}
 			config.deps = Object.keys(window.__karma__.files) // Dynamically load all test files
 				.filter(function (file) { // Filter test modules.
