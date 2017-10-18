@@ -119,10 +119,12 @@ var config_requirejs = exports.config_requirejs = function config_requirejs(grun
 			dirPath = path.dirname(conf.path),
 			dep, name;
 		conf.config.paths[params.pkgName] = path.relative(dirPath, params.paths.build + params.pkgName)
+			.replace(/\\/g, '/') // For Windows' paths.
 			.replace(/\.js$/, '');
 		for (var id in allDeps) {
 			dep = allDeps[id];
 			conf.config.paths[_parse_pkgName(dep.id).name] = path.relative(dirPath, dep.path)
+				.replace(/\\/g, '/') // For Windows' paths.
 				.replace(/\.js$/, '');
 		}
 		conf = { requirejs: { build: conf }};

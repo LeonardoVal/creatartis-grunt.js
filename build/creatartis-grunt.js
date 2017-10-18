@@ -195,9 +195,7 @@ var requireConfig = exports.requireConfig = function requireConfig(config) {
 		if (window.__karma__) {
 			config.baseUrl = '/base';
 			for (var p in config.paths) {
-				config.paths[p] = config.paths[p]
-					.replace(/\\/g, '/') // For paths on Windows.
-					.replace(/^\.\.\//, '/base/');
+				config.paths[p] = config.paths[p].replace(/^\.\.\//, '/base/');
 			}
 			config.deps = Object.keys(window.__karma__.files) // Dynamically load all test files
 				.filter(function (file) { // Filter test modules.
@@ -508,10 +506,12 @@ var config_requirejs = exports.config_requirejs = function config_requirejs(grun
 			dirPath = path.dirname(conf.path),
 			dep, name;
 		conf.config.paths[params.pkgName] = path.relative(dirPath, params.paths.build + params.pkgName)
+			.replace(/\\/g, '/') // For Windows' paths.
 			.replace(/\.js$/, '');
 		for (var id in allDeps) {
 			dep = allDeps[id];
 			conf.config.paths[_parse_pkgName(dep.id).name] = path.relative(dirPath, dep.path)
+				.replace(/\\/g, '/') // For Windows' paths.
 				.replace(/\.js$/, '');
 		}
 		conf = { requirejs: { build: conf }};
