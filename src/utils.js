@@ -173,35 +173,6 @@ var normalizeDep = exports.normalizeDep = function normalizeDep(grunt, dep) {
 	return dep;
 };
 
-/** Generates a script for configuring RequireJS. Mostly used for setting the `paths` in tests.
-*/
-var requireConfig = exports.requireConfig = function requireConfig(config) {
-	var code = '// Generated code, please do NOT modify.\n('+
-
-(function () { "use strict";
-	define([], function () {
-		var config = $1;
-		if (window.__karma__) {
-			config.baseUrl = '/base';
-			for (var p in config.paths) {
-				config.paths[p] = config.paths[p].replace(/^\.\.\//, '/base/');
-			}
-			config.deps = Object.keys(window.__karma__.files) // Dynamically load all test files
-				.filter(function (file) { // Filter test modules.
-					return /\.test\.js$/.test(file);
-				}).map(function (file) { // Normalize paths to RequireJS module names.
-					return file.replace(/^\/base\/(.*?)\.js$/, '$1');
-				});
-		}
-		require.config(config);
-		console.log("RequireJS configuration: "+ JSON.stringify(config, null, '  '));
-	});
-} +')();')
-		.replace('$1', JSON.stringify(config, null, '\t').replace(/\n/g, '\n\t\t'))
-	;
-	return code;
-};
-
 /** Calculates the set of all dependencies, direct and indirect.
 */
 var allDependencies = exports.allDependencies = function allDependencies(params) {

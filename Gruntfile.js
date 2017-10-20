@@ -17,7 +17,9 @@ module.exports = function(grunt) {
 					footer: ''
 				},
 				src: ['__prologue__',
-						'utils', 'params', 'config', 'layout'
+						'utils', 'params',
+						'config', 'config-requirejs',
+						'layout'
 					].map(function (name) {
 						return 'src/'+ name +'.js';
 					}),

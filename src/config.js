@@ -100,44 +100,6 @@ var config_uglify = exports.config_uglify = function config_uglify(grunt, params
 	_loadTask(grunt, 'uglify', 'grunt-contrib-uglify');
 };
 
-/** ## Write RequireJS configuration script. #######################################################
-
-Dependencies for tests that use RequireJS need a configuration including the paths of each library.
-This task generates a script that makes this configuration.
-*/
-var config_requirejs = exports.config_requirejs = function config_requirejs(grunt, params) {
-	if (params.hasOwnProperty('requirejs') && !params.requirejs) {
-		return false;
-	} else {
-		var allDeps = allDependencies(params),
-			conf = {
-				path: params.requirejs || params.paths.test +'require-config.js',
-				config: {
-					paths: {}
-				}
-			},
-			dirPath = path.dirname(conf.path),
-			dep, name;
-		conf.config.paths[params.pkgName] = path.relative(dirPath, params.paths.build + params.pkgName)
-			.replace(/\\/g, '/') // For Windows' paths.
-			.replace(/\.js$/, '');
-		for (var id in allDeps) {
-			dep = allDeps[id];
-			conf.config.paths[_parse_pkgName(dep.id).name] = path.relative(dirPath, dep.path)
-				.replace(/\\/g, '/') // For Windows' paths.
-				.replace(/\.js$/, '');
-		}
-		conf = { requirejs: { build: conf }};
-		params.log('config_requirejs', conf);
-		grunt.config.merge(conf);
-		grunt.registerMultiTask("requirejs", function () {
-			grunt.file.write(this.data.path, requireConfig(this.data.config));
-			grunt.log.ok("Generated script "+ this.data.path +".");
-		});
-		return true;
-	}
-};
-
 /** ## Configurate `copy` ##########################################################################
 
 For testing the library, the built module and its dependencies can be copied in the `tests/lib`
