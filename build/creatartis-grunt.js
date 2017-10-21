@@ -723,7 +723,7 @@ var requireConfig = exports.requireConfig = function requireConfig(config) {
 						console.error("Global `"+ name +"` already defined!");
 					} else {
 						window[name] = module;
-						console.log("Library `"+ deps[i] +"` is available as `window."+
+						console.log("Loaded library `"+ deps[i] +"` is available as `window."+
 							name +"`.");
 					}
 				});
@@ -734,7 +734,7 @@ var requireConfig = exports.requireConfig = function requireConfig(config) {
 			});
 		};
 	});
-}) +')('+ JSON.stringify(config, null, '\t').replace(/\n/g, '\n\t\t') +');';
+}) +')('+ JSON.stringify(config, null, '\t') +');';
 };
 
 /** ## Write RequireJS configuration script. #######################################################
