@@ -727,7 +727,9 @@ var requireConfig = exports.requireConfig = function requireConfig(config) {
 							name +"`.");
 					}
 				});
-				main.apply(window, args);
+				if (main) {
+					main.apply(window, args);
+				}
 				console.log("Ready.");
 			}, function (err) {
 				console.error(err);
