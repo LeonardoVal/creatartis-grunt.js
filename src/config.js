@@ -32,7 +32,8 @@ var config_concat = exports.config_concat = function config_concat(grunt, params
 		var t = targets[k],
 			options = Object.assign({
 				separator: params.separator,
-				sourceMap: params.sourceMap
+				sourceMap: params.sourceMap,
+				process: params.concatProcess
 			}, wrapper(t.wrapper, params.pkgName, params.deps));
 		conf.concat[k] = {
 			options: options,
