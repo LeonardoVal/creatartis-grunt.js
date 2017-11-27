@@ -243,6 +243,37 @@ var config_benchmark = exports.config_benchmark = function config_benchmark(grun
 	}
 };
 
+/** ## Configurate `connect` #######################################################################
+
+Static http server configuration for testing with web pages.
+*/
+var config_connect = exports.config_connect = function config_connect(grunt, params) {
+	if (params.hasOwnProperty('connect') && !params.connect) {
+		return false;
+	} else {
+		var conf = {
+			connect: {
+				options: {
+					port: 8088,
+					keepalive: true,
+					base: '.'
+				}
+			}
+		};
+		Object.keys[params.connect].forEach(function (task) {
+			conf.connect[task] = {
+				options: {
+					open: 'http://localhost:8088/'+ params.connect[task]
+				}
+			};
+		});
+		params.log('config_connect', conf);
+		grunt.config.merge(conf);
+		_loadTask(grunt, 'connect', 'grunt-contrib-connect');
+		return true;
+	}
+};
+
 /** ## Configurate `docker` ########################################################################
 
 Documentation generation uses `grunt-docker`, using the sources at `src/`, `README.md` and any
@@ -292,6 +323,7 @@ exports.config = function config(grunt, params) {
 		doCopy = _try(config_copy, grunt, params),
 		doTest = _try(config_karma, grunt, params),
 		doDocs = _try(config_docker, grunt, params),
+		doConnect = _try(config_connect, grunt, params),
 		doPerf = _try(config_benchmark, grunt, params);
 
 	if (params.hasOwnProperty('tasks')) {
@@ -324,6 +356,11 @@ exports.config = function config(grunt, params) {
 			buildTasks.push('docker:build');
 		}
 		grunt.registerTask('build', buildTasks);
+		if (doConnect) {
+			Object.keys(params.connect).forEach(function (task) {
+				grunt.registerTask(task, ['compile', 'connect:'+ task]);
+			});
+		}
 		if (doPerf) {
 			grunt.registerTask('perf', buildTasks.concat(['benchmark:build']));
 		}
