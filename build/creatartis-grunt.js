@@ -336,10 +336,11 @@ var __param_log__ = exports.__param_log__ = function __param_log__(params) {
 */
 var __params__ = exports.__params__ = function __params__(grunt, params) {
 	params = Object.assign({
-		bundled: [],
+		copy: [],
 		separator: '\n\n',
 		sourceMap: true,
-		karma: ['Firefox']
+		karma: ['Firefox'],
+		connect: {}
 	}, params);
 
 	__param_pkgName__(params, grunt);
@@ -465,43 +466,43 @@ For testing the library, the built module and its dependencies can be copied in 
 folder. This may be necessary for some tests.
 */
 var config_copy = exports.config_copy = function config_copy(grunt, params) {
-	var paths = params.paths,
-		files = (params.bundled || []).map(function (b) {
-		if (typeof b === 'string') {
-			return { nonull: true, src: b,
-				dest: params.paths.build + path.basename(b) };
-		} else {
-			return b;
+	function __testLibFiles__(paths, files, params) {
+		if (paths.test_lib) {
+			files.push(
+				{ nonull: true, src: 'node_modules/requirejs/require.js', 
+					dest: paths.test_lib +'require.js' },
+				{ nonull: true, expand: true, flatten: true,
+					src: paths.build +'*.js', dest: paths.test_lib },
+				{ nonull: true, expand: true, flatten: true,
+					src: paths.build +'*.js.map', dest: paths.test_lib }
+			);
+			params.deps.forEach(function (dep) {
+				files.push({ nonull: true, src: dep.path,
+					dest: paths.test_lib + path.basename(dep.path) });
+				if (dep.sourceMap) {
+					files.push({ nonull: true, src: dep.sourceMap,
+						dest: paths.test_lib + path.basename(dep.sourceMap) });
+				}
+			});
 		}
-	});
-	if (paths.test_lib) {
-		files.push(
-			{ nonull: true, src: 'node_modules/requirejs/require.js',
-				dest: paths.test_lib +'require.js' },
-			{ nonull: true, expand: true, flatten: true,
-				src: paths.build +'*.js', dest: paths.test_lib },
-			{ nonull: true, expand: true, flatten: true,
-				src: paths.build +'*.js.map', dest: paths.test_lib }
-		);
-		params.deps.forEach(function (dep) {
-			files.push({ nonull: true, src: dep.path,
-				dest: paths.test_lib + path.basename(dep.path) });
-			if (dep.sourceMap) {
-				files.push({ nonull: true, src: dep.sourceMap,
-					dest: paths.test_lib + path.basename(dep.sourceMap) });
-			}
-		});
 	}
+
+	var paths = params.paths,
+		files = [];
+	Object.keys(params.copy).forEach(function (dest) {
+		var src = params.copy[dest];
+		if (typeof src === 'string') {
+			src = [src];
+		}
+		src.forEach(function (src) {
+			files.push({ nonull: true, src: src, dest: dest, expand: true, flatten: true });
+		});
+	});
+	__testLibFiles__(paths, files, params);
 	if (files.length < 1) {
 		return false;
 	} else {
-		var conf = {
-			copy: {
-				build: {
-					files: files
-				}
-			},
-		};
+		var conf = { copy: { build: { files: files } } };
 		params.log('config_copy', conf);
 		grunt.config.merge(conf);
 		_loadTask(grunt, 'copy', 'grunt-contrib-copy');
@@ -601,6 +602,37 @@ var config_benchmark = exports.config_benchmark = function config_benchmark(grun
 	}
 };
 
+/** ## Configurate `connect` #######################################################################
+
+Static http server configuration for testing with web pages.
+*/
+var config_connect = exports.config_connect = function config_connect(grunt, params) {
+	if (params.hasOwnProperty('connect') && !params.connect) {
+		return false;
+	} else {
+		var conf = {
+			connect: {
+				options: {
+					port: 8088,
+					keepalive: true,
+					base: '.'
+				}
+			}
+		};
+		Object.keys(params.connect).forEach(function (task) {
+			var url = params.connect[task];
+			if (!url.startsWith('http')) {
+				url = 'http://localhost:8088/'+ url;
+			}
+			conf.connect[task] = { options: { open: url } };
+		});
+		params.log('config_connect', conf);
+		grunt.config.merge(conf);
+		_loadTask(grunt, 'connect', 'grunt-contrib-connect');
+		return true;
+	}
+};
+
 /** ## Configurate `docker` ########################################################################
 
 Documentation generation uses `grunt-docker`, using the sources at `src/`, `README.md` and any
@@ -650,6 +682,7 @@ exports.config = function config(grunt, params) {
 		doCopy = _try(config_copy, grunt, params),
 		doTest = _try(config_karma, grunt, params),
 		doDocs = _try(config_docker, grunt, params),
+		doConnect = _try(config_connect, grunt, params),
 		doPerf = _try(config_benchmark, grunt, params);
 
 	if (params.hasOwnProperty('tasks')) {
@@ -682,6 +715,11 @@ exports.config = function config(grunt, params) {
 			buildTasks.push('docker:build');
 		}
 		grunt.registerTask('build', buildTasks);
+		if (doConnect) {
+			Object.keys(params.connect).forEach(function (task) {
+				grunt.registerTask(task, ['compile', 'connect:'+ task]);
+			});
+		}
 		if (doPerf) {
 			grunt.registerTask('perf', buildTasks.concat(['benchmark:build']));
 		}
