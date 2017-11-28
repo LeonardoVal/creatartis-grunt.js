@@ -122,10 +122,11 @@ var __param_log__ = exports.__param_log__ = function __param_log__(params) {
 */
 var __params__ = exports.__params__ = function __params__(grunt, params) {
 	params = Object.assign({
-		bundled: [],
+		copy: [],
 		separator: '\n\n',
 		sourceMap: true,
-		karma: ['Firefox']
+		karma: ['Firefox'],
+		connect: {}
 	}, params);
 
 	__param_pkgName__(params, grunt);
