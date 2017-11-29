@@ -495,7 +495,7 @@ var config_copy = exports.config_copy = function config_copy(grunt, params) {
 			src = [src];
 		}
 		src.forEach(function (src) {
-			files.push({ nonull: true, src: src, dest: dest, expand: true, flatten: true });
+			files.push({ src: src, dest: dest, nonull: true, expand: true, flatten: true });
 		});
 	});
 	__testLibFiles__(paths, files, params);
