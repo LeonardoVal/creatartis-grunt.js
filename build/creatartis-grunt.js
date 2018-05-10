@@ -87,11 +87,11 @@ var wrapper_AMD = exports.wrapper_AMD = function wrapper_AMD(deps) {
 };
 
 var wrapper_node = exports.wrapper_node = function wrapper_node(deps) {
-	var globalList = deps.filter(function (dep) {
-		return !dep.dev;
-	}).map(function (dep) {
-		return _js_ref('this', dep.name);
-	}).join(',');
+	var requireList = deps.filter(function (dep) {
+			return !dep.dev;
+		}).map(function (dep) {
+			return 'require('+ JSON.stringify(dep.id) +')';
+		}).join(',');
 	return (function (init) { "use strict";
 			module.exports = init($1);
 		} +'').replace('$1', requireList);
