@@ -36,7 +36,7 @@ function _js_ref(obj, id) {
 	return obj + (/^[a-zA-Z_$][0-9a-zA-Z_$]*$/.test(id) ? '.'+ id : '['+ JSON.stringify(id) +']');
 }
 
-var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(pkg_name, deps) {
+var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(name, deps) {
 	deps = deps.filter(function (dep) {
 		return !dep.dev;
 	});
@@ -61,7 +61,7 @@ var wrapper_UMD = exports.wrapper_UMD = function wrapper_UMD(pkg_name, deps) {
 		.replace('$1', nameList)
 		.replace('$2', requireList)
 		.replace('$3', globalList)
-		.replace('$4', _js_ref('this', pkg_name));
+		.replace('$4', _js_ref('this', name));
 };
 
 var wrapper_AMD = exports.wrapper_AMD = function wrapper_AMD(deps) {
@@ -86,7 +86,7 @@ var wrapper_node = exports.wrapper_node = function wrapper_node(deps) {
 		} +'').replace('$1', requireList);
 };
 
-var wrapper_tag = exports.wrapper_tag = function wrapper_tag(pkg_name, deps) {
+var wrapper_tag = exports.wrapper_tag = function wrapper_tag(name, deps) {
 	var globalList = deps.filter(function (dep) {
 			return !dep.dev;
 		}).map(function (dep) {
@@ -95,7 +95,7 @@ var wrapper_tag = exports.wrapper_tag = function wrapper_tag(pkg_name, deps) {
 	return (function (init) { "use strict";
 			$1 = init($2);
 		} +'')
-		.replace('$1', _js_ref('this', pkg_name))
+		.replace('$1', _js_ref('this', name))
 		.replace('$2', globalList);
 };
 
