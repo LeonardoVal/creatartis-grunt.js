@@ -34,7 +34,7 @@ var config_concat = exports.config_concat = function config_concat(grunt, params
 				separator: params.separator,
 				sourceMap: params.sourceMap,
 				process: params.concatProcess
-			}, wrapper(t.wrapper, params.libName, params.deps));
+			}, wrapper(t.wrapper, params.globalName, params.deps));
 		conf.concat[k] = {
 			options: options,
 			src: params.sourceFiles,

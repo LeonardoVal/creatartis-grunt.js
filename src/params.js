@@ -15,7 +15,7 @@ var __param_pkgName__ = exports.__param_pkgName__ = function __param_pkgName__(p
 			params.pkgScope = m.scope;
 		}
 	}
-	params.libName = params.libName || params.pkgName;
+	params.globalName = params.globalName || params.pkgName;
 	return params;
 };
 
