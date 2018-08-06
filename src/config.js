@@ -98,7 +98,7 @@ var config_uglify = exports.config_uglify = function config_uglify(grunt, params
 	});
 	params.log('config_uglify', conf);
 	grunt.config.merge(conf);
-	_loadTask(grunt, 'uglify', 'grunt-contrib-uglify');
+	_loadTask(grunt, 'uglify', 'grunt-contrib-uglify-es');
 };
 
 /** ## Configurate `copy` ##########################################################################
