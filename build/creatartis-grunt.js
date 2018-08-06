@@ -314,7 +314,8 @@ var __param_targets__ = exports.__param_targets__ = function __param_targets__(p
 var __param_jshint__ = exports.__param_jshint__ = function __param_jshint__(params) {
 	params.jshint = Object.assign({
 		loopfunc: true,
-		boss: true
+		boss: true,
+		esversion: 6
 	}, params.jshint);
 	return params;
 };
@@ -458,7 +459,7 @@ var config_uglify = exports.config_uglify = function config_uglify(grunt, params
 	});
 	params.log('config_uglify', conf);
 	grunt.config.merge(conf);
-	_loadTask(grunt, 'uglify', 'grunt-contrib-uglify');
+	_loadTask(grunt, 'uglify', 'grunt-contrib-uglify-es');
 };
 
 /** ## Configurate `copy` ##########################################################################
