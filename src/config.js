@@ -280,6 +280,7 @@ Documentation generation uses `grunt-docker`, using the sources at `src/`, `READ
 markdown file in the `docs/` folder.
 */
 var config_docker = exports.config_docker = function config_docker(grunt, params) {
+	//FIXME grunt-docker removed because of vulnerabilities. 
 	if (params.hasOwnProperty('docs') && !params.docs) {
 		return false;
 	} else {
@@ -322,7 +323,8 @@ exports.config = function config(grunt, params) {
 	var doRequireJS = _try(config_requirejs, grunt, params),
 		doCopy = _try(config_copy, grunt, params),
 		doTest = _try(config_karma, grunt, params),
-		doDocs = _try(config_docker, grunt, params),
+		//FIXME grunt-docker removed because of vulnerabilities. 
+		doDocs = false, //_try(config_docker, grunt, params),
 		doConnect = _try(config_connect, grunt, params),
 		doPerf = _try(config_benchmark, grunt, params);
 
@@ -353,7 +355,8 @@ exports.config = function config(grunt, params) {
 			buildTasks = ['test'];
 		}
 		if (doDocs) {
-			buildTasks.push('docker:build');
+			//FIXME grunt-docker removed because of vulnerabilities. 
+			//buildTasks.push('docker:build');
 		}
 		grunt.registerTask('build', buildTasks);
 		if (doConnect) {
