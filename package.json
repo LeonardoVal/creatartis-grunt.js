@@ -4,7 +4,7 @@
 	"keywords": [
 		"grunt"
 	],
-	"version": "0.0.15",
+	"version": "0.0.16-alpha",
 	"homepage": "https://github.com/LeonardoVal/creatartis-grunt.js",
 	"author": {
 		"name": "Leonardo Val",
@@ -21,21 +21,20 @@
 		"LICENSE.md"
 	],
 	"dependencies": {
-		"requirejs": "~2.3.5",
-		"source-map-support": "~0.5.6",
+		"requirejs": "~2.3.6",
+		"source-map-support": "~0.5.9",
 		"grunt": "~1.0.3",
 		"grunt-contrib-copy": "~1.0.0",
 		"grunt-contrib-concat": "~1.0.1",
 		"grunt-contrib-uglify-es": "~3.3.0",
-		"grunt-contrib-jshint": "~1.1.0",
-		"grunt-contrib-clean": "~1.1.0",
-		"grunt-contrib-connect": "~1.0.2",
-		"grunt-docker": "~0.0.11",
-		"grunt-karma": "~2.0.0",
-		"karma": "~2.0.5",
+		"grunt-contrib-jshint": "~2.0.0",
+		"grunt-contrib-clean": "~2.0.0",
+		"grunt-contrib-connect": "~2.0.0",
+		"grunt-karma": "~3.0.0",
+		"karma": "~3.0.0",
 		"karma-requirejs": "~1.1.0",
 		"karma-jasmine": "~1.1.2",
-		"jasmine-core": "~3.1.0",
+		"jasmine-core": "~3.2.1",
 		"karma-firefox-launcher": "1.1.0",
 		"karma-sourcemap-loader": "~0.3.7",
 		"grunt-benchmark": "~1.0.0"
