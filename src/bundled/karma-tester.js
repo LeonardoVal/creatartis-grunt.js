@@ -24,6 +24,7 @@
 	// Testing environment extensions and custom definitions. /////////////////////////////////////
 
 	beforeEach(function() { // Add custom matchers.
+		jasmine.DEFAULT_TIMEOUT_INTERVAL = 8000; // 8 seconds.
 		jasmine.addMatchers({
 			toBeOfType: function (util, customEqualityTesters) {
 				return {
