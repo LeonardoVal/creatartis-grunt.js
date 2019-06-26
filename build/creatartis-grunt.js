@@ -669,12 +669,11 @@ var config_jsdoc = exports.config_jsdoc = function config_jsdoc(grunt, params) {
 		var conf = {
 			jsdoc: {
 				build: {
-					src: ['src/**/*.js'],
+					src: ['src/**/*.js', 'README.md', params.paths.docs +'*.md'],
 					options: {
 						destination: params.paths.docs +'jsdoc',
-						readme: 'README.md',
-						tutorials: params.paths.docs +'*.md',
-						configure: params.paths.docs +'jsdoc-conf.json' 
+						//tutorials: grunt.file.expand(params.paths.docs +'*.md'),
+						configure: params.paths.docs +'jsdoc-conf.json'
 					}
 				}
 			}
