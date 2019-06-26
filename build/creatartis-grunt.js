@@ -640,37 +640,53 @@ var config_connect = exports.config_connect = function config_connect(grunt, par
 	}
 };
 
-/** ## Configurate `docker` ####################################################
+/** ## Configurate `jsdoc` #####################################################
 
-Documentation generation uses `grunt-docker`, using the sources at `src/`,
+Documentation generation uses `grunt-jsdoc`, using the sources at `src/`, 
 `README.md` and any markdown file in the `docs/` folder.
 */
-var config_docker = exports.config_docker = function config_docker(grunt, params) {
-	//FIXME grunt-docker removed because of vulnerabilities. 
+var config_jsdoc = exports.config_jsdoc = function config_jsdoc(grunt, params) {
 	if (params.hasOwnProperty('docs') && !params.docs) {
 		return false;
 	} else {
+		if (!grunt.file.exists(params.paths.docs +'jsdoc')) {
+			grunt.file.mkdir(params.paths.docs +'jsdoc');
+		}
+		grunt.file.write(params.paths.docs +'jsdoc-conf.json',
+			JSON.stringify({
+				source: {
+					exclude: ['src/__prologue__.js', 'src/__epilogue__.js']
+				},
+				sourceType: "script",
+				plugins: ["plugins/markdown"],
+				opts: {
+					template: "templates/default",
+					encoding: "utf8",
+					recurse: true
+				}
+			})
+		);
 		var conf = {
-			docker: {
+			jsdoc: {
 				build: {
-					src: ['src/**/*.js', 'README.md', params.paths.docs +'*.md'],
-					dest: params.paths.docs +'docker',
+					src: ['src/**/*.js'],
 					options: {
-						colourScheme: 'borland',
-						ignoreHidden: true,
-						exclude: 'src/__prologue__.js,src/__epilogue__.js'
+						destination: params.paths.docs +'jsdoc',
+						readme: 'README.md',
+						tutorials: params.paths.docs +'*.md',
+						configure: params.paths.docs +'jsdoc-conf.json' 
 					}
 				}
 			}
 		};
-		params.log('config_docker', conf);
+		params.log('config_jsdoc', conf);
 		grunt.config.merge(conf);
-		_loadTask(grunt, 'docker', 'grunt-docker');
+		_loadTask(grunt, 'jsdoc', 'grunt-jsdoc');
 		return true;
 	}
 };
 
-/** ## Full configuration ##########################################################################
+/** ## Full configuration ######################################################
 
 TODO
 */
@@ -689,8 +705,7 @@ exports.config = function config(grunt, params) {
 	var doRequireJS = _try(config_requirejs, grunt, params),
 		doCopy = _try(config_copy, grunt, params),
 		doTest = _try(config_karma, grunt, params),
-		//FIXME grunt-docker removed because of vulnerabilities. 
-		doDocs = false, //_try(config_docker, grunt, params),
+		doDocs = _try(config_jsdoc, grunt, params),
 		doConnect = _try(config_connect, grunt, params),
 		doPerf = _try(config_benchmark, grunt, params);
 
@@ -721,8 +736,7 @@ exports.config = function config(grunt, params) {
 			buildTasks = ['test'];
 		}
 		if (doDocs) {
-			//FIXME grunt-docker removed because of vulnerabilities. 
-			//buildTasks.push('docker:build');
+			buildTasks.push('jsdoc:build');
 		}
 		grunt.registerTask('build', buildTasks);
 		if (doConnect) {
