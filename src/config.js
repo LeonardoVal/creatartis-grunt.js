@@ -3,7 +3,7 @@
 TODO
 */
 
-/** ## Configurate `clean` #########################################################################
+/** ## Configurate `clean` #####################################################
 
 The `clean` task is used to delete all files in the build folder (`build/`).
 */
@@ -18,10 +18,11 @@ var config_clean = exports.config_clean = function config_clean(grunt, params) {
 	_loadTask(grunt, 'clean', 'grunt-contrib-clean');
 };
 
-/** ## Configurate `concat` ########################################################################
+/** ## Configurate `concat` ####################################################
 
-The source files of the project (in the `src/` folder) are concatenated into one module. The plugin
-`grunt-contrib-concat` can also generate source map files, that are very useful for debugging.
+The source files of the project (in the `src/` folder) are concatenated into one 
+module. The plugin `grunt-contrib-concat` can also generate source map files, 
+that are very useful for debugging.
 */
 var config_concat = exports.config_concat = function config_concat(grunt, params) {
 	var targets = params.targets,
@@ -46,10 +47,10 @@ var config_concat = exports.config_concat = function config_concat(grunt, params
 	_loadTask(grunt, 'concat', 'grunt-contrib-concat');
 };
 
-/** ## Configurate `jshint` ########################################################################
+/** ## Configurate `jshint` ####################################################
 
-Checking the code is imperative in Javascript. The plugin `grunt-contrib-jshint` is used to lint the
-concatenated code, and also the scripts for the test cases.
+Checking the code is imperative in Javascript. The plugin `grunt-contrib-jshint`
+is used to lint the concatenated code, and also the scripts for the test cases.
 */
 var config_jshint = exports.config_jshint = function config_jshint(grunt, params) {
 	var src = [
@@ -69,42 +70,38 @@ var config_jshint = exports.config_jshint = function config_jshint(grunt, params
 	_loadTask(grunt, 'jshint', 'grunt-contrib-jshint');
 };
 
-/** ## Configurate `uglify` ########################################################################
+/** ## Configurate `terser` ####################################################
 
-The plugin `grunt-contrib-uglify` is used to minimize the concatenated code. It also can generate
-source maps.
+The plugin `grunt-terser` is used to minimize the concatenated code. It also can
+generate source maps.
 */
-var config_uglify = exports.config_uglify = function config_uglify(grunt, params) {
+var config_terser = exports.config_terser = function config_terser(grunt, params) {
 	var targets = params.targets,
-		conf = {
-			uglify: { }
-		};
+	conf = {
+		terser: { }
+	};
 	Object.keys(targets).forEach(function (k) {
-		var t = targets[k],
-			options = {
-				banner: '//! '+ params.pkgName +' '+ params.pkgVersion +'\n',
-				report: 'min',
-				sourceMap: params.sourceMap
+		var t = targets[k];
+		conf.terser[k] = {
+			options: {
+				sourceMap: params.sourceMap && {
+					content: grunt.file.read(t.fileName +'.js.map'),
+					filename: t.fileName +'.min.js.map'
+				}
+			},
+			files: {} 
 		};
-		if (params.sourceMap) {
-			options.sourceMapIn = t.fileName +'.js.map';
-			options.sourceMapName = t.fileName +'.min.js.map';
-		}
-		conf.uglify[k] = {
-			options: options,
-			src: t.fileName +'.js',
-			dest: t.fileName +'.min.js'
-		};
+		conf.terser[k].files[t.fileName +'.min.js'] = t.fileName +'.js'; 
 	});
-	params.log('config_uglify', conf);
+	params.log('config_terser', conf);
 	grunt.config.merge(conf);
-	_loadTask(grunt, 'uglify', 'grunt-contrib-uglify');
+	_loadTask(grunt, 'terser', 'grunt-terser');
 };
 
-/** ## Configurate `copy` ##########################################################################
+/** ## Configurate `copy` ######################################################
 
-For testing the library, the built module and its dependencies can be copied in the `tests/lib`
-folder. This may be necessary for some tests.
+For testing the library, the built module and its dependencies can be copied in
+the `tests/lib` folder. This may be necessary for some tests.
 */
 var config_copy = exports.config_copy = function config_copy(grunt, params) {
 	function __testLibFiles__(paths, files, params) {
@@ -121,8 +118,11 @@ var config_copy = exports.config_copy = function config_copy(grunt, params) {
 				files.push({ nonull: true, src: dep.path,
 					dest: paths.test_lib + path.basename(dep.path) });
 				if (dep.sourceMap) {
-					files.push({ nonull: true, src: dep.sourceMap,
-						dest: paths.test_lib + path.basename(dep.sourceMap) });
+					files.push({ 
+						nonull: true, 
+						src: dep.sourceMap,
+						dest: paths.test_lib + path.basename(dep.sourceMap) 
+					});
 				}
 			});
 		}
@@ -136,7 +136,8 @@ var config_copy = exports.config_copy = function config_copy(grunt, params) {
 			src = [src];
 		}
 		src.forEach(function (src) {
-			files.push({ src: src, dest: dest, nonull: true, expand: true, flatten: true });
+			files.push({ src: src, dest: dest, nonull: true, expand: true, 
+				flatten: true });
 		});
 	});
 	__testLibFiles__(paths, files, params);
@@ -151,10 +152,10 @@ var config_copy = exports.config_copy = function config_copy(grunt, params) {
 	}
 };
 
-/** ## Configurate `karma` #########################################################################
+/** ## Configurate `karma` #####################################################
 
-Karma is a framework that automates web browsers to run test cases. It is a little hard to configure
-properly, but is very useful.
+Karma is a framework that automates web browsers to run test cases. It is a 
+little hard to configure properly, but is very useful.
 */
 var config_karma = exports.config_karma = function config_karma(grunt, params) {
 	if (params.hasOwnProperty('karma') && !params.karma) {
@@ -168,10 +169,14 @@ var config_karma = exports.config_karma = function config_karma(grunt, params) {
 					preprocessors: {},
 				     files: [
 						__dirname +'/karma-tester.js',
-						{ pattern: paths.specs +'*.test.js', included: false },
-						{ pattern: paths.build + pkgName +'.js', included: false },
-						{ pattern: paths.build + pkgName +'.js.map', included: false },
-						{ pattern: paths.test +'require-config.js', included: false }
+						{ pattern: paths.specs +'*.test.js',
+							included: false },
+						{ pattern: paths.build + pkgName +'.js',
+							included: false },
+						{ pattern: paths.build + pkgName +'.js.map',
+							included: false },
+						{ pattern: paths.test +'require-config.js',
+							included: false }
 				     ],
 				     exclude: [],
 				     reporters: ['progress'], // https://npmjs.org/browse/keyword/karma-reporter
@@ -221,7 +226,7 @@ function _karmaFiles(params, karma) {
 	}
 }
 
-/** ## Configurate `benchmark` #####################################################################
+/** ## Configurate `benchmark` #################################################
 
 Performance benchmarks using `grunt-benchmark`.
 */
@@ -243,7 +248,7 @@ var config_benchmark = exports.config_benchmark = function config_benchmark(grun
 	}
 };
 
-/** ## Configurate `connect` #######################################################################
+/** ## Configurate `connect` ###################################################
 
 Static http server configuration for testing with web pages.
 */
@@ -274,10 +279,10 @@ var config_connect = exports.config_connect = function config_connect(grunt, par
 	}
 };
 
-/** ## Configurate `docker` ########################################################################
+/** ## Configurate `docker` ####################################################
 
-Documentation generation uses `grunt-docker`, using the sources at `src/`, `README.md` and any
-markdown file in the `docs/` folder.
+Documentation generation uses `grunt-docker`, using the sources at `src/`,
+`README.md` and any markdown file in the `docs/` folder.
 */
 var config_docker = exports.config_docker = function config_docker(grunt, params) {
 	//FIXME grunt-docker removed because of vulnerabilities. 
@@ -318,7 +323,7 @@ exports.config = function config(grunt, params) {
 	_try(config_clean, grunt, params);
 	_try(config_concat, grunt, params);
 	_try(config_jshint, grunt, params);
-	_try(config_uglify, grunt, params);
+	_try(config_terser, grunt, params);
 
 	var doRequireJS = _try(config_requirejs, grunt, params),
 		doCopy = _try(config_copy, grunt, params),
@@ -338,10 +343,10 @@ exports.config = function config(grunt, params) {
 		grunt.registerTask('concat-all', Object.keys(params.targets).map(function (t) {
 			return 'concat:'+ t;
 		}));
-		grunt.registerTask('uglify-all', Object.keys(params.targets).map(function (t) {
-			return 'uglify:'+ t;
+		grunt.registerTask('terser-all', Object.keys(params.targets).map(function (t) {
+			return 'terser:'+ t;
 		}));
-		var compileTasks = ['clean:build', 'concat-all', 'jshint:build', 'uglify-all'],
+		var compileTasks = ['clean:build', 'concat-all', 'jshint:build', 'terser-all'],
 			buildTasks = ['compile'];
 		if (doRequireJS) {
 			compileTasks.push('requirejs:build');
