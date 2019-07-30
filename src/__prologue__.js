@@ -1,9 +1,8 @@
-/**TODO
-*/
-//"use strict";
+/** @module creatartis-grunt
+ */
 
-var path = require('path'),
+const path = require('path'),
 	fs = require('fs'),
 	inspect = require('util').inspect;
 
-var exports = module.exports;
+const exports = module.exports;
