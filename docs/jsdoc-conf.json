@@ -1,0 +1,17 @@
+{
+	"source": {
+		"exclude": [
+			"src/__prologue__.js",
+			"src/__epilogue__.js"
+		]
+	},
+	"sourceType": "script",
+	"plugins": [
+		"plugins/markdown"
+	],
+	"opts": {
+		"template": "templates/default",
+		"encoding": "utf8",
+		"recurse": true
+	}
+}

@@ -4,11 +4,11 @@ Grunt build configuration for @creatartis projects. Copyright (c) 2017 Leonardo 
 */
 "use strict";
 
-module.exports = function(grunt) {
+module.exports = function (grunt) {
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
 
-		concat: { ////////////////////////////////////////////////////////////////////////////////
+		concat: { ////////////////////////////////////////////////////////////
 			build: {
 				options: {
 					separator: '\n\n',
@@ -26,7 +26,7 @@ module.exports = function(grunt) {
 				dest: 'build/creatartis-grunt.js'
 			},
 		},
-		copy: { //////////////////////////////////////////////////////////////////////////////////
+		copy: { //////////////////////////////////////////////////////////////
 			build: {
 				files: [
 					{ nonull: true, src: 'src/bundled/karma-tester.js',
@@ -34,12 +34,13 @@ module.exports = function(grunt) {
 				]
 			}
 		},
-		jshint: { ////////////////////////////////////////////////////////////////////////////////
+		jshint: { ////////////////////////////////////////////////////////////
 			build: {
 				options: { // Check <http://jshint.com/docs/options/>.
 					loopfunc: true,
 					boss: true,
-					scripturl: true
+					scripturl: true,
+					esversion: 6
 				},
 				src: [
 					'build/creatartis-grunt.js',
@@ -48,16 +49,27 @@ module.exports = function(grunt) {
 				]
 			},
 		},
-		clean: { /////////////////////////////////////////////////////////////////////////////////
+		clean: { /////////////////////////////////////////////////////////////
 			build: ['build/']
+		},
+		jsdoc: { /////////////////////////////////////////////////////////////
+			build: {
+				src: ['src/**/*.js', 'README.md', 'docs/*.md'],
+				options: {
+					destination: 'docs/jsdoc/',
+					configure: 'docs/jsdoc-conf.json'
+				}
+			}
 		}
+
 	});
 
 	grunt.loadNpmTasks('grunt-contrib-clean');
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-contrib-jshint');
+	grunt.loadNpmTasks('grunt-jsdoc');
 
 	grunt.registerTask('build', ['clean:build', 'copy:build', 'concat:build', 'jshint:build']);
-	grunt.registerTask('default', ['build']);
+	grunt.registerTask('default', ['build', 'jsdoc:build']);
 };
