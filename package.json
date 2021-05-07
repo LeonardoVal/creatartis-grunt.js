@@ -21,7 +21,7 @@
 		"LICENSE.md"
 	],
 	"dependencies": {
-		"grunt": "~1.0.4",
+		"grunt": "~1.3.0",
 		"grunt-benchmark": "~1.0.0",
 		"grunt-contrib-clean": "~2.0.0",
 		"grunt-contrib-concat": "~1.0.1",
